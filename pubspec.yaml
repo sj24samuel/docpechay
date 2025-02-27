@@ -43,10 +43,17 @@ dependencies:
   cloud_firestore: ^5.6.5
   firebase_storage: ^12.4.4
   firebase_messaging: ^15.2.4
+  flutter_launcher_icons: ^0.14.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.jpg"  # Path to your icon image
+  adaptive_icon_background: "#ffffff"  # (Optional) Background for Android adaptive icons
+  #adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"  # (Optional) Foreground for Android adaptive icons
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
