@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "293157679830",
+    "firebase_url": "https://drpechay-2025-default-rtdb.firebaseio.com",
+    "project_id": "drpechay-2025",
+    "storage_bucket": "drpechay-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293157679830:android:bd1531cc969cf52b4f4f77",
+        "android_client_info": {
+          "package_name": "com.example.docpechayapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBK0TXGJv0j8ycZFyW5CjHKKS0JwZC-lJE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
