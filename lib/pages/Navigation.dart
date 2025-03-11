@@ -6,8 +6,8 @@ import 'package:docpechayapp/pages/SettingsPage.dart';
 import 'package:docpechayapp/pages/camerascanner.dart';
 import 'package:docpechayapp/pages/homescreen.dart';
 import 'package:docpechayapp/pages/databank.dart';
-import 'package:docpechayapp/pages/treatmentbank.dart';
 import 'package:docpechayapp/pages/userinfo.dart';
+import 'package:docpechayapp/pages/treatmentbank.dart';
 import 'package:flutter/material.dart';
 
 class Navigation extends StatefulWidget {
@@ -95,14 +95,15 @@ class _HomepageState extends State<Navigation> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings),
+              leading: const Icon(Icons.book),
               title: const Text('My Info'),
               onTap: () {
                 setState(() {
-                  _page = 5;
+                  _page = 8;
                 });
                 Navigator.pop(context);
               },
+            ),
             ListTile(
               leading: const Icon(Icons.book),
               title: const Text('Fertilizer & Pesticides Information'),
@@ -169,7 +170,7 @@ class _HomepageState extends State<Navigation> {
       case 7:
         return const Treatmentbank();
       case 8:
-        return const UserInfoPage();
+        return const UserInfoPage(userId: "userinfo",);
       default:
         return Container(); // Default page, you can replace it with another widget.
     }
