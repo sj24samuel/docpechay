@@ -1,12 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
-import 'recommendation_card.dart'; // Import the new widget
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 
-class ResultPage extends StatelessWidget {
+class ResultPage extends StatefulWidget {
   final String detectionResult;
   final double detectionConfidence;
   final XFile? capturedImage;
@@ -18,87 +16,83 @@ class ResultPage extends StatelessWidget {
     this.capturedImage,
   });
 
-  // Recommendations based on detected disease
-  List<Widget> _getRecommendationCards() {
-    final Map<String, List<String>> recommendations = {
-      'Alternaria Leaf Spot': [
-        "Remove infected leaves immediately to prevent spreading.",
-        "Apply fungicide as per manufacturer's instructions.",
-        "Ensure proper ventilation and reduce humidity around plants."
-      ],
-      'Bacterial Soft Rot': [
-        "Avoid overhead watering to minimize moisture on leaves.",
-        "Apply copper-based fungicide to affected plants.",
-        "Ensure proper plant spacing for adequate airflow."
-      ],
-      'Healthy Pechay': [
-        "Maintain regular care for healthy growth.",
-        "Use appropriate fertilizers.",
-        "Monitor for pests or diseases."
-      ],
-      'Black Rot': [
-        "Use resistant plant varieties.",
-        "Remove and destroy infected plants.",
-        "Sanitize tools and equipment."
-      ],
-      'Downy Mildew': [
-        "Apply fungicides before symptoms appear.",
-        "Improve air circulation.",
-        "Reduce leaf wetness."
-      ],
-      'Unknown Object': [
-        "Ensure the image is of a leaf.",
-        "Avoid blurry or unclear images.",
-        "Provide a clear view of the object."
-      ],
-    };
+  @override
+  State<ResultPage> createState() => _ResultPageState();
+}
 
-    // Get the recommendations for the detected disease
-    List<String> tips = recommendations[detectionResult] ?? ["No recommendations available."];
+class _ResultPageState extends State<ResultPage> {
+  Position? _currentPosition;
 
-    return tips.map((tip) => RecommendationCard(recommendation: tip)).toList();
+  @override
+  void initState() {
+    super.initState();
+    _getLocationAndSaveResult();
   }
 
-  Future<String> uploadImageToFirebase(XFile imageFile) async {
-    try {
-      // Ensure user is logged in
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw FirebaseAuthException(
-          code: "user-not-signed-in",
-          message: "User must be signed in to upload images.",
-        );
-      }
+  // Get GPS location
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
 
-      File file = File(imageFile.path);
-      String fileName = "images/${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg";
-      
-      Reference ref = FirebaseStorage.instance.ref().child(fileName);
-      UploadTask uploadTask = ref.putFile(file);
-      TaskSnapshot snapshot = await uploadTask;
-      
-      return await snapshot.ref.getDownloadURL(); // Returns image URL
-    } catch (e) {
-      print("Upload failed: $e");
-      return "";
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint("Location services are disabled.");
+      return;
     }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        debugPrint("Location permissions are denied.");
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      debugPrint("Location permissions are permanently denied.");
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+
+    setState(() {
+      _currentPosition = position;
+    });
+
+    debugPrint("Location: ${position.latitude}, ${position.longitude}");
   }
 
-  Future<void> saveDetectionResult(String imageUrl, String disease, double confidence) async {
+  // Save detection result and location to Firestore
+  Future<void> _saveResultToFirestore() async {
+    if (_currentPosition == null) {
+      debugPrint("Skipping Firestore save because location is null.");
+      return;
+    }
+
     try {
-      await FirebaseFirestore.instance.collection('detections').add({
-        'imageUrl': imageUrl,
-        'disease': disease,
-        'confidence': confidence,
+      await FirebaseFirestore.instance.collection('detection_results').add({
+        'disease': widget.detectionResult,
+        'confidence': widget.detectionConfidence,
+        'imagePath': widget.capturedImage?.path ?? "No image",
+        'latitude': _currentPosition!.latitude,
+        'longitude': _currentPosition!.longitude,
         'timestamp': FieldValue.serverTimestamp(),
       });
+      debugPrint("Detection result saved to Firestore with location.");
     } catch (e) {
-      print("Error saving result: $e");
+      debugPrint("Error saving result: $e");
     }
   }
 
-  
-
+  // Get location and then save result
+  Future<void> _getLocationAndSaveResult() async {
+    await _getCurrentLocation();
+    if (_currentPosition != null) {
+      await _saveResultToFirestore();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,9 +113,9 @@ class ResultPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Show Captured Image
-            if (capturedImage != null)
+            if (widget.capturedImage != null)
               Image.file(
-                File(capturedImage!.path),
+                File(widget.capturedImage!.path),
                 height: 250,
               )
             else
@@ -131,57 +125,34 @@ class ResultPage extends StatelessWidget {
 
             // Detection Result
             Text(
-              "Disease: $detectionResult",
+              "Disease: ${widget.detectionResult}",
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
-              "Confidence: ${(detectionConfidence * 100).toStringAsFixed(2)}%",
+              "Confidence: ${(widget.detectionConfidence * 100).toStringAsFixed(2)}%",
               style: const TextStyle(fontSize: 18),
             ),
 
             const SizedBox(height: 30),
 
-            // Recommendations
-            const Text(
-              "Recommendations:",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView(
-                children: _getRecommendationCards(),
-              ),
-            ),
-            
+            // GPS Coordinates Display
+            _currentPosition != null
+                ? Text(
+                    "Location: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}",
+                    style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                  )
+                : const Text("Fetching GPS location..."),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
+            // Back Button
             ElevatedButton(
-              onPressed: () async {
-                User? user = FirebaseAuth.instance.currentUser;
-
-                if (user == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please log in first!")),
-                  );
-                  return;
-                }
-
-                if (capturedImage != null) {
-                  String imageUrl = await uploadImageToFirebase(capturedImage!);
-                  if (imageUrl.isNotEmpty) {
-                    await saveDetectionResult(imageUrl, detectionResult, detectionConfidence);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Uploaded Successfully!")),
-                    );
-                  }
-                }
+              onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text("Upload & Back to Scanner"),
+              child: const Text("Back to Scanner"),
             ),
-
           ],
         ),
       ),
