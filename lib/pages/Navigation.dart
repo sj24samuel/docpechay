@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:docpechayapp/pages/AboutUs.dart';
 import 'package:docpechayapp/pages/Calculate.dart';
 import 'package:docpechayapp/pages/FAQ.dart';
+import 'package:docpechayapp/pages/camerascanner.dart';
 import 'package:docpechayapp/pages/user_profile/profile_completion_page.dart';
 //import 'package:drpechayapp/pages/Scanner.dart';
 import 'package:docpechayapp/pages/SettingsPage.dart';
-import 'package:docpechayapp/pages/camerascanner.dart';
 import 'package:docpechayapp/pages/homescreen.dart';
 import 'package:docpechayapp/pages/databank.dart';
 import 'package:docpechayapp/pages/user_profile/userinfo.dart';
@@ -159,7 +159,7 @@ class _HomepageState extends State<Navigation> {
       case 0:
         return const HomeWidget();
       case 1:
-        return const Camerascanner();
+        return const CameraScanner();
       case 2:
         return const Calculate();
       case 3:

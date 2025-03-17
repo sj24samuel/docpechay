@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_v2/tflite_v2.dart';
 
-class Camerascanner extends StatefulWidget {
-  const Camerascanner({super.key});
+class Camerascanner1 extends StatefulWidget {
+  const Camerascanner1({super.key});
 
   @override
-  State<Camerascanner> createState() => _CamerascannerState();
+  State<Camerascanner1> createState() => _CamerascannerState();
 }
 
-class _CamerascannerState extends State<Camerascanner> {
+class _CamerascannerState extends State<Camerascanner1> {
   CameraController? _cameraController;
   late List<CameraDescription> cameras;
   bool isDetecting = false;

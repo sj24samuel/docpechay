@@ -1,5 +1,5 @@
-import 'package:camera/camera.dart';
 import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,14 +7,15 @@ import 'package:geolocator/geolocator.dart';
 class ResultPage extends StatefulWidget {
   final String detectionResult;
   final double detectionConfidence;
+  final String imageUrl;
   final XFile? capturedImage;
 
-  const ResultPage({
-    super.key,
+  const ResultPage({Key? key,
     required this.detectionResult,
     required this.detectionConfidence,
-    this.capturedImage,
-  });
+    required this.imageUrl,
+    this.capturedImage, Position? position,
+  }) : super(key: key);
 
   @override
   State<ResultPage> createState() => _ResultPageState();
@@ -22,6 +23,7 @@ class ResultPage extends StatefulWidget {
 
 class _ResultPageState extends State<ResultPage> {
   Position? _currentPosition;
+  bool _isSaving = false; // Track if saving is in progress
 
   @override
   void initState() {
@@ -71,6 +73,10 @@ class _ResultPageState extends State<ResultPage> {
       return;
     }
 
+    setState(() {
+      _isSaving = true;
+    });
+
     try {
       await FirebaseFirestore.instance.collection('detection_results').add({
         'disease': widget.detectionResult,
@@ -84,6 +90,10 @@ class _ResultPageState extends State<ResultPage> {
     } catch (e) {
       debugPrint("Error saving result: $e");
     }
+
+    setState(() {
+      _isSaving = false;
+    });
   }
 
   // Get location and then save result
@@ -92,6 +102,34 @@ class _ResultPageState extends State<ResultPage> {
     if (_currentPosition != null) {
       await _saveResultToFirestore();
     }
+  }
+
+  // Generate recommendations based on the detected disease
+  List<String> _getRecommendations(String disease) {
+    Map<String, List<String>> recommendations = {
+      "Black Rot": [
+        "Remove infected leaves immediately.",
+        "Use copper-based fungicides to control spread.",
+        "Ensure proper spacing between plants for airflow."
+      ],
+      "Downy Mildew": [
+        "Avoid overhead watering to prevent moisture buildup.",
+        "Apply organic fungicides like neem oil.",
+        "Rotate crops to prevent disease recurrence."
+      ],
+      "Leaf Spot": [
+        "Use disease-resistant plant varieties.",
+        "Keep foliage dry to prevent fungal growth.",
+        "Apply sulfur-based fungicides if necessary."
+      ],
+      "No disease detected": [
+        "Your plant looks healthy!",
+        "Regularly inspect for any changes in leaves.",
+        "Maintain proper watering and fertilization."
+      ]
+    };
+
+    return recommendations[disease] ?? ["No specific recommendations available."];
   }
 
   @override
@@ -134,7 +172,7 @@ class _ResultPageState extends State<ResultPage> {
               style: const TextStyle(fontSize: 18),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
             // GPS Coordinates Display
             _currentPosition != null
@@ -144,7 +182,32 @@ class _ResultPageState extends State<ResultPage> {
                   )
                 : const Text("Fetching GPS location..."),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+
+            // Recommendations Section
+            const Text(
+              "Recommendations",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            ..._getRecommendations(widget.detectionResult).map(
+              (rec) => Card(
+                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    "• $rec",
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Saving Indicator
+            if (_isSaving) const CircularProgressIndicator(),
 
             // Back Button
             ElevatedButton(

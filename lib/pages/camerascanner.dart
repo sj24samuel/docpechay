@@ -2,22 +2,25 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_v2/tflite_v2.dart';
-import 'package:docpechayapp/pages/result_page.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
+import 'result_page.dart';
 
-class Camerascanner extends StatefulWidget {
-  const Camerascanner({super.key});
+class CameraScanner extends StatefulWidget {
+  const CameraScanner({super.key});
 
   @override
-  State<Camerascanner> createState() => _CamerascannerState();
+  State<CameraScanner> createState() => _CameraScannerState();
 }
 
-class _CamerascannerState extends State<Camerascanner> {
+class _CameraScannerState extends State<CameraScanner> {
   CameraController? _cameraController;
   late List<CameraDescription> cameras;
   bool isDetecting = false;
-  String? detectionResult;
-  double? detectionConfidence;
-  Map<String, dynamic>? _boundingBox;
+  String detectionResult = "Detecting...";
+  double detectionConfidence = 0.0;
 
   @override
   void initState() {
@@ -29,31 +32,27 @@ class _CamerascannerState extends State<Camerascanner> {
   Future<void> _initializeCamera() async {
     cameras = await availableCameras();
     _cameraController = CameraController(
-      cameras[0], // Use back camera
+      cameras.first,
       ResolutionPreset.medium,
     );
 
     await _cameraController?.initialize();
     if (!mounted) return;
-
     setState(() {});
-    _startCameraStream();
+    _startImageStream();
   }
 
-  void _startCameraStream() {
+  void _startImageStream() {
     _cameraController?.startImageStream((CameraImage image) async {
       if (!isDetecting) {
         isDetecting = true;
-
         var result = await _detectDisease(image);
         if (mounted) {
           setState(() {
             detectionResult = result['label'] ?? "Unknown";
             detectionConfidence = result['confidence'] ?? 0.0;
-            _boundingBox = result['box']; // Bounding box
           });
         }
-
         await Future.delayed(const Duration(milliseconds: 500));
         isDetecting = false;
       }
@@ -74,7 +73,7 @@ class _CamerascannerState extends State<Camerascanner> {
       imageWidth: image.width,
       imageMean: 127.5,
       imageStd: 127.5,
-      rotation: 90, // Fix rotation
+      rotation: 90,
       numResults: 1,
       threshold: 0.3,
       asynch: true,
@@ -85,39 +84,89 @@ class _CamerascannerState extends State<Camerascanner> {
       return {
         'label': result['label'],
         'confidence': result['confidence'],
-        'box': result['rect']
       };
     }
-    return {'label': 'No disease detected', 'confidence': 0.0, 'box': null};
+    return {'label': 'No disease detected', 'confidence': 0.0};
   }
 
   Future<void> _captureImage() async {
-    if (_cameraController != null && _cameraController!.value.isInitialized) {
-      try {
-        XFile file = await _cameraController!.takePicture();
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
 
-        // Navigate to Result Page
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ResultPage(
-                detectionResult: detectionResult ?? "Unknown",
-                detectionConfidence: detectionConfidence ?? 0.0,
-                capturedImage: file, // Pass the captured image
-              ),
+    try {
+      XFile file = await _cameraController!.takePicture();
+      Position? position = await _getCurrentLocation();
+      String imageUrl = await _uploadImage(File(file.path));
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultPage(
+              detectionResult: detectionResult,
+              detectionConfidence: detectionConfidence,
+              imageUrl: imageUrl,
+              position: position,
             ),
-          );
-        }
-      } catch (e) {
-        print("Error capturing image: $e");
+          ),
+        );
       }
+    } catch (e) {
+      debugPrint("Error capturing image: $e");
     }
   }
 
+  Future<String> _uploadImage(File imageFile) async {
+    try {
+      String fileName = "images/${const Uuid().v4()}.jpg";
+      Reference ref = FirebaseStorage.instance.ref().child(fileName);
+      await ref.putFile(imageFile);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint("Error uploading image: $e");
+      return "";
+    }
+  }
+
+  Future<Position?> _getCurrentLocation() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  // Check if location services are enabled
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    debugPrint("Location services are disabled.");
+    return null;
+  }
+
+  // Check location permissions
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      debugPrint("Location permission denied.");
+      return null;
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    debugPrint("Location permission is permanently denied.");
+    return null;
+  }
+
+  try {
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    return position;
+  } catch (e) {
+    debugPrint("Failed to get location: $e");
+    return null;
+  }
+}
+
+
   @override
   void dispose() {
-    _cameraController?.stopImageStream();
     _cameraController?.dispose();
     Tflite.close();
     super.dispose();
@@ -133,74 +182,43 @@ class _CamerascannerState extends State<Camerascanner> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Pechay Disease Detection",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: const Color.fromARGB(255, 98, 218, 18),
+        title: const Text("Pechay Disease Scanner"),
+        backgroundColor: Colors.green,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Camera Preview (Fixed Orientation)
-          Expanded(
-            flex: 3,
-            child: Stack(
-              children: [
-                Center(
-                  child: Transform.rotate(
-                    angle: 90 * (3.1415926535897932 / 180), // Rotate camera preview
-                    child: CameraPreview(_cameraController!),
-                  ),
-                ),
+          CameraPreview(_cameraController!),
 
-                // Bounding Box
-                if (_boundingBox != null)
-                  Positioned(
-                    left: _boundingBox!['x'] * MediaQuery.of(context).size.width,
-                    top: _boundingBox!['y'] * MediaQuery.of(context).size.height,
-                    width: _boundingBox!['w'] * MediaQuery.of(context).size.width,
-                    height: _boundingBox!['h'] * MediaQuery.of(context).size.height,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.red, width: 3),
-                      ),
-                    ),
-                  ),
-
-                // Detection Result Overlay
-                Positioned(
-                  bottom: 100,
-                  left: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      detectionResult != null
-                          ? "$detectionResult\nConfidence: ${(detectionConfidence ?? 0.0 * 100).toStringAsFixed(2)}%"
-                          : "Detecting...",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
+          // Detection Result Overlay
+          Positioned(
+            bottom: 150,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "$detectionResult\nConfidence: ${(detectionConfidence * 100).toStringAsFixed(2)}%",
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
 
           // Capture Button
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: FloatingActionButton(
-              backgroundColor: Colors.green,
-              onPressed: _captureImage,
-              child: const Icon(Icons.camera),
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: FloatingActionButton(
+                backgroundColor: Colors.green,
+                onPressed: _captureImage,
+                child: const Icon(Icons.camera_alt, size: 32),
+              ),
             ),
           ),
         ],
