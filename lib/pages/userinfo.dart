@@ -1,99 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class UserInfoPage extends StatefulWidget {
-  final String userId; // User ID from Firebase
+class UserInfoPage extends StatelessWidget {
+  final String userId;
 
-  const UserInfoPage({super.key, required this.userId});
+  const UserInfoPage({super.key, required this.userId, required Map<String, dynamic> userData});
 
-  @override
-  _UserInfoPageState createState() => _UserInfoPageState();
-}
-
-class _UserInfoPageState extends State<UserInfoPage> {
-  Map<String, dynamic>? userData;
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchUserData();
-  }
-
-  Future<void> fetchUserData() async {
+  Future<DocumentSnapshot?> getUserInfo() async {
     try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('user')
-          .doc(widget.userId)
-          .get();
-
-      if (userDoc.exists) {
-        setState(() {
-          userData = userDoc.data() as Map<String, dynamic>;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      return await FirebaseFirestore.instance.collection('user').doc(userId).get();
     } catch (e) {
-      print("Error fetching user data: $e");
-      setState(() {
-        isLoading = false;
-      });
+      print("❌ Firestore error: $e");
+      return null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('User Info')),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : userData == null
-              ? const Center(child: Text("User not found"))
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundImage:
-                            NetworkImage(userData!['profilePicUrl'] ?? ''),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "${userData!['firstName']} ${userData!['middleInitial']}. ${userData!['lastName']}",
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text("Age: ${userData!['age']} | Sex: ${userData!['sex']}",
-                          style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 16),
-                      Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.email),
-                              title: Text(userData!['email'] ?? ''),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.home),
-                              title: Text(userData!['address'] ?? ''),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+      appBar: AppBar(title: const Text("My Profile")),
+      body: FutureBuilder<DocumentSnapshot?>(
+        future: getUserInfo(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text("No profile found!"));
+          }
+
+          var userData = snapshot.data!.data() as Map<String, dynamic>;
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: userData['profilePicUrl'] != null
+                        ? NetworkImage(userData['profilePicUrl'])
+                        : null,
+                    child: userData['profilePicUrl'] == null
+                        ? const Icon(Icons.person, size: 50)
+                        : null,
                   ),
                 ),
+                const SizedBox(height: 20),
+                Text("Name: ${userData['firstName']} ${userData['middleInitial'] ?? ''} ${userData['lastName']}",
+                    style: const TextStyle(fontSize: 18)),
+                Text("Age: ${userData['age']}", style: const TextStyle(fontSize: 18)),
+                Text("Sex: ${userData['sex']}", style: const TextStyle(fontSize: 18)),
+                Text("Email: ${userData['email']}", style: const TextStyle(fontSize: 18)),
+                Text("Address: ${userData['address']}", style: const TextStyle(fontSize: 18)),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

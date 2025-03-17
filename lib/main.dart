@@ -1,4 +1,4 @@
-import 'package:docpechayapp/pages/Navigation.dart';
+import 'package:docpechayapp/pages/user_profile/login_page.dart';
 //import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 150, 235, 14)),
         useMaterial3: true,
       ),
-      home: const Navigation(),
+      home: LoginPage(),
     );
   } 
 }

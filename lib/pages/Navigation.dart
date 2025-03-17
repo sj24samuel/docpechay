@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:docpechayapp/pages/AboutUs.dart';
 import 'package:docpechayapp/pages/Calculate.dart';
 import 'package:docpechayapp/pages/FAQ.dart';
+import 'package:docpechayapp/pages/ProfileSetup.dart';
 //import 'package:drpechayapp/pages/Scanner.dart';
 import 'package:docpechayapp/pages/SettingsPage.dart';
 import 'package:docpechayapp/pages/camerascanner.dart';
@@ -8,6 +10,7 @@ import 'package:docpechayapp/pages/homescreen.dart';
 import 'package:docpechayapp/pages/databank.dart';
 import 'package:docpechayapp/pages/userinfo.dart';
 import 'package:docpechayapp/pages/treatmentbank.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Navigation extends StatefulWidget {
@@ -169,8 +172,23 @@ class _HomepageState extends State<Navigation> {
         return const glossary_index();
       case 7:
         return const Treatmentbank();
-      case 8:
-        return const UserInfoPage(userId: "userinfo",);
+      //  case 8:
+      //   return FutureBuilder<DocumentSnapshot>(
+      //     future: FirebaseFirestore.instance
+      //         .collection('user')
+      //         .doc(FirebaseAuth.instance.currentUser?.uid)
+      //         .get(),
+      //     builder: (context, snapshot) {
+      //       if (snapshot.connectionState == ConnectionState.waiting) {
+      //         return const Center(child: CircularProgressIndicator());
+      //       }
+      //       if (snapshot.hasData && snapshot.data!.exists) {
+      //         return UserInfoPage(userId: FirebaseAuth.instance.currentUser!.uid);
+      //       } else {
+      //         return const CreateProfilePage();
+      //       }
+      //     },
+      //   );
       default:
         return Container(); // Default page, you can replace it with another widget.
     }
