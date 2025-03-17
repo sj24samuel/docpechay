@@ -3,17 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
-import 'login_page.dart';
 
-class ProfileCompletionPage extends StatefulWidget {
+class EditProfilePage extends StatefulWidget {
   final String uid;
-  ProfileCompletionPage({required this.uid});
+  EditProfilePage({required this.uid});
 
   @override
-  _ProfileCompletionPageState createState() => _ProfileCompletionPageState();
+  _EditProfilePageState createState() => _EditProfilePageState();
 }
 
-class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
+class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController middleInitialController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
@@ -21,7 +20,30 @@ class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
   final TextEditingController addressController = TextEditingController();
   String? selectedSex;
   File? _image;
+  String? _profileImageUrl;
   final picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+    if (userDoc.exists) {
+      var userData = userDoc.data() as Map<String, dynamic>;
+      setState(() {
+        firstNameController.text = userData['first_name'] ?? '';
+        middleInitialController.text = userData['middle_initial'] ?? '';
+        lastNameController.text = userData['last_name'] ?? '';
+        ageController.text = userData['age'].toString();
+        selectedSex = userData['sex'];
+        addressController.text = userData['address'] ?? '';
+        _profileImageUrl = userData['profile_picture'];
+      });
+    }
+  }
 
   Future<void> pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -41,39 +63,34 @@ class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
     }
   }
 
-  Future<void> saveUserProfile() async {
-    String? imageUrl;
+  Future<void> updateUserProfile() async {
+    String? imageUrl = _profileImageUrl;
+
     if (_image != null) {
       imageUrl = await uploadImage(_image!);
     }
 
-    await FirebaseFirestore.instance.collection('users').doc(widget.uid).set({
+    await FirebaseFirestore.instance.collection('users').doc(widget.uid).update({
       'first_name': firstNameController.text.trim(),
       'middle_initial': middleInitialController.text.trim(),
       'last_name': lastNameController.text.trim(),
       'age': int.tryParse(ageController.text.trim()) ?? 0,
       'sex': selectedSex,
       'address': addressController.text.trim(),
-      'email': FirebaseFirestore.instance.collection('users').doc(widget.uid).get().then((value) => value['email']),
       'profile_picture': imageUrl ?? "",
     });
 
-    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Profile saved successfully!")),
+      SnackBar(content: Text("Profile updated successfully!")),
     );
 
-    // Redirect to login page
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
-    );
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Complete Your Profile")),
+      appBar: AppBar(title: Text("Edit Profile")),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -82,8 +99,14 @@ class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
               onTap: pickImage,
               child: CircleAvatar(
                 radius: 50,
-                backgroundImage: _image != null ? FileImage(_image!) : null,
-                child: _image == null ? Icon(Icons.camera_alt, size: 50) : null,
+                backgroundImage: _image != null
+                    ? FileImage(_image!)
+                    : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                        ? NetworkImage(_profileImageUrl!)
+                        : null) as ImageProvider<Object>?,
+                child: _image == null && (_profileImageUrl == null || _profileImageUrl!.isEmpty)
+                    ? Icon(Icons.camera_alt, size: 50)
+                    : null,
               ),
             ),
             SizedBox(height: 10),
@@ -99,7 +122,7 @@ class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
             ),
             TextField(controller: addressController, decoration: InputDecoration(labelText: "Address")),
             SizedBox(height: 20),
-            ElevatedButton(onPressed: saveUserProfile, child: Text("Save Profile")),
+            ElevatedButton(onPressed: updateUserProfile, child: Text("Save Changes")),
           ],
         ),
       ),
