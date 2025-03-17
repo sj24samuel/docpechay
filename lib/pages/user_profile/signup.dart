@@ -1,8 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:docpechayapp/pages/Navigation.dart';
-
+import 'profile_completion_page.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -10,79 +9,73 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> signUp() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
-    String name = nameController.text.trim();
-    
 
-    // Validate input fields
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("All fields are required!")),
-      );
-      return;
-    }
-
-    // Validate email format
-    bool emailValid = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(email);
-    if (!emailValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid email format!")),
-      );
-      return;
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password must be at least 6 characters long!")),
-      );
-      return;
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(password) || !RegExp(r'[0-9]').hasMatch(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password must contain at least one uppercase letter and one number!")),
+        const SnackBar(content: Text("Email and password are required!")),
       );
       return;
     }
 
     try {
-      // Check if the email is already in use
-      List<String> methods = await _auth.fetchSignInMethodsForEmail(email);
-      if (methods.isNotEmpty) {
+      // ✅ Check if email already exists in Firestore before creating the account
+      var userExists = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (userExists.docs.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email is already in use. Please use a different email.")),
+          const SnackBar(content: Text("Email is already in use!")),
         );
         return;
       }
 
-      // Proceed with sign-up
+      // ✅ Create user in Firebase Auth
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      await _firestore.collection('users').doc(userCredential.user!.uid).set({
-        'name': name,
+      // ✅ Save user email in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'email': email,
       });
 
+      // ✅ Navigate to Profile Completion Page
+      if (!mounted) return;
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Navigation()));
+        context,
+        MaterialPageRoute(builder: (context) => ProfileCompletionPage(uid: userCredential.user!.uid)),
+      );
+
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Sign-up failed. Please try again.";
+
+      if (e.code == 'email-already-in-use') {
+        errorMessage = "This email is already registered. Try logging in.";
+      } else if (e.code == 'weak-password') {
+        errorMessage = "Password is too weak. Use a stronger password.";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "Invalid email format.";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Sign-up failed: ${e.toString()}")),
+        SnackBar(content: Text("Error: ${e.toString()}")),
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -92,9 +85,16 @@ class _SignUpPageState extends State<SignUpPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(controller: nameController, decoration: InputDecoration(labelText: "Name")),
-            TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
-            TextField(controller: passwordController, obscureText: true, decoration: InputDecoration(labelText: "Password")),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: "Email"),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Password"),
+            ),
             const SizedBox(height: 20),
             ElevatedButton(onPressed: signUp, child: const Text("Sign Up")),
           ],
