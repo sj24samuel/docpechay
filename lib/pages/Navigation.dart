@@ -11,6 +11,7 @@ import 'package:docpechayapp/pages/databank.dart';
 import 'package:docpechayapp/pages/user_profile/userinfo.dart';
 import 'package:docpechayapp/pages/treatmentbank.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:docpechayapp/pages/monitoring_page.dart';
 import 'package:flutter/material.dart';
 
 class Navigation extends StatefulWidget {
@@ -118,6 +119,17 @@ class _HomepageState extends State<Navigation> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Monitoring'),
+              onTap: () {
+                setState(() {
+                  _page = 9; // New index for the monitoring page
+                });
+                Navigator.pop(context);
+              },
+            ),
+
+            ListTile(
               leading: const Icon(Icons.person),
               title: const Text('About Us'),
               onTap: () {
@@ -191,8 +203,8 @@ class _HomepageState extends State<Navigation> {
             }
           },
         );
-
-
+      case 9:
+        return const MonitoringPage(); // ✅ Monitoring Page added
       default:
         return Container(); // Default page, you can replace it with another widget.
     }
