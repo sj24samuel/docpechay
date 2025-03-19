@@ -1,275 +1,215 @@
-import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:tflite_v2/tflite_v2.dart';
+// import 'package:docpechayapp/pages/result_page.dart';
+// import 'package:flutter/material.dart';
+// import 'package:camera/camera.dart';
+// import 'package:flutter/services.dart';
+// import 'dart:io';
+// import 'package:tflite_v2/tflite_v2.dart';
 
-class Camerascanner1 extends StatefulWidget {
-  const Camerascanner1({super.key});
+// class Camerascanner1 extends StatefulWidget {
+//   const Camerascanner1({super.key});
 
-  @override
-  State<Camerascanner1> createState() => _CamerascannerState();
-}
+//   @override
+//   State<Camerascanner1> createState() => _CamerascannerState();
+// }
 
-class _CamerascannerState extends State<Camerascanner1> {
-  CameraController? _cameraController;
-  late List<CameraDescription> cameras;
-  bool isDetecting = false;
-  String? detectionResult;
-  double? detectionConfidence;
-  late String res;
-  List<Map<String, dynamic>>? _recognitions1;
+// class _CamerascannerState extends State<Camerascanner1> {
+//   CameraController? _cameraController;
+//   late List<CameraDescription> cameras;
+//   bool isDetecting = false;
+//   String? detectionResult;
+//   double? detectionConfidence;
+//   late String res;
+//   List<Map<String, dynamic>>? _recognitions1;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-    _loadModel();
-  }
+//   @override
+//   void initState() {
+//     super.initState();
+//     _initializeCamera();
+//     _loadModel();
+//   }
 
-  Future<void> _initializeCamera() async {
-    cameras = await availableCameras();
-    _cameraController = CameraController(
-      cameras[0], // Use the back camera
-      ResolutionPreset.low,
-    );
+//   Future<void> _initializeCamera() async {
+//     cameras = await availableCameras();
+//     _cameraController = CameraController(
+//       cameras[0], // Use back camera
+//       ResolutionPreset.medium,
+//     );
 
-    await _cameraController?.initialize();
-    if (!mounted) return;
+//     await _cameraController?.initialize();
+//     if (!mounted) return;
 
-    setState(() {});
-    _startCameraStream();
-  }
+//     await _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
 
-  void _startCameraStream() {
-    _cameraController?.startImageStream((CameraImage image) async {
-      if (!isDetecting) {
-        isDetecting = true;
+//     setState(() {});
+//     _startCameraStream();
+//   }
 
-        // Run the machine learning model on the frame
-        var result = await _detectDisease(image);
 
-        if (mounted) {
-          setState(() {
-            detectionResult = result['label'];
-            detectionConfidence = result['confidence'];
-            _recognitions1 = [result];
-          });
-        }
+//   void _startCameraStream() {
+//     _cameraController?.startImageStream((CameraImage image) async {
+//       if (!isDetecting) {
+//         isDetecting = true;
 
-        isDetecting = false;
-      }
-    });
-  }
+//         // Run the machine learning model on the frame
+//         var result = await _detectDisease(image);
 
-  Future<void> _loadModel() async {
-    res = (await Tflite.loadModel(
-      model: "assets/bokchoymodel.tflite",
-      labels: "assets/petchay_labels.txt",
-    ))!;
-    print("Model loaded: $res");
-  }
+//     if (mounted) {
+//           setState(() {
+//             detectionResult = result['label'];
+//             detectionConfidence = result['confidence'];
+//             _recognitions1 = [result];
+//           });
+//     }
 
-  Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
-    print("Running model on frame...");
-    var results = await Tflite.runModelOnFrame(
-      bytesList: image.planes.map((plane) {
-        return plane.bytes;
-      }).toList(),
-      imageHeight: image.height,
-      imageWidth: image.width,
-      imageMean: 127.5, // For normalization if needed
-      imageStd: 127.5, // For normalization if needed
-      rotation: 90,
-      numResults: 1, // Limit number of results
-      threshold: 0.3, // Detection confidence threshold
-      asynch: true,
-    );
-    print('Inference results: $results');
-    if (results != null && results.isNotEmpty) {
-      var result = results.first;
-      return {
-        'label': result['label'],
-        'confidence': result['confidence'],
-      };
-    }
-    return {
-      'label': 'No disease detected',
-      'confidence': 0.0,
-    };
-  }
+//         isDetecting = false;
+//       }
+//     });
+//   }
 
-  List<Widget> _getRecommendationCards() {
-    final Map<String, List<String>> recommendations = {
-      'Alternaria Leaf Spot': [
-        "Remove infected leaves immediately to prevent spreading.",
-        "Apply fungicide as per manufacturer's instructions.",
-        "Ensure proper ventilation and reduce humidity around plants."
-      ],
-      'Bacterial Soft Rot': [
-        "Avoid overhead watering to minimize moisture on leaves.",
-        "Apply copper-based fungicide to affected plants.",
-        "Ensure proper plant spacing for adequate airflow."
-      ],
-      'Healthy Pechay': [
-        "Maintain regular care for healthy growth.",
-        "Use appropriate fertilizers.",
-        "Monitor for pests or diseases."
-      ],
-      'Black Rot': [
-        "Use resistant plant varieties.",
-        "Remove and destroy infected plants.",
-        "Sanitize tools and equipment."
-      ],
-      'Downy Mildew': [
-        "Apply fungicides before symptoms appear.",
-        "Improve air circulation.",
-        "Reduce leaf wetness."
-      ],
-      'Unknown Object': [
-        "Ensure the image is of a leaf.",
-        "Avoid blurry or unclear images.",
-        "Provide a clear view of the object."
-      ],
-    };
+//   Future<void> _loadModel() async {
+//     res = (await Tflite.loadModel(
+//       model: "assets/bokchoymodel.tflite",
+//       labels: "assets/petchay_labels.txt",
+//     ))!;
+//     print("Model loaded: $res");
+//   }
+//   Future<void> _captureAndDetect() async {
+//     if (_cameraController == null || !_cameraController!.value.isInitialized) {
+//       return;
+//     }
 
-    if (_recognitions1 == null || _recognitions1!.isEmpty || !_recognitions1![0].containsKey('label')) {
-      return [];
-    }
+//     try {
+//       XFile picture = await _cameraController!.takePicture();
 
-    final label = _recognitions1![0]['label'];
-    final recommendationList = recommendations[label];
+//       // Run detection on the captured image
+//       var results = await _detectDisease(File(picture.path) as CameraImage);
 
-    if (recommendationList == null) {
-      return [];
-    }
+//       // Navigate to result page
+//       if (mounted) {
+//         Navigator.push(
+//           context,
+//           MaterialPageRoute(
+//             builder: (context) => ResultPage(
+//               imagePath: picture.path,
+//               detectionResult: results['label'],
+//               detectionConfidence: results['confidence'],
+//             ),
+//           ),
+//         );
+//       }
+//     } catch (e) {
+//       print("Error capturing image: $e");
+//     }
+//   }
 
-    return [
-      Container(
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        padding: const EdgeInsets.all(10),
-        color: Colors.grey[200],
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Recommendations for $label:",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            ...recommendationList.map((recommendation) => Text(
-                  recommendation,
-                  style: const TextStyle(fontSize: 15),
-                )),
-          ],
-        ),
-      ),
-    ];
-  }
+//   Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
+//     print("Running model on frame...");
+//     var results = await Tflite.runModelOnFrame(
+//       bytesList: image.planes.map((plane) {
+//         return plane.bytes;
+//       }).toList(),
+//       imageHeight: image.height,
+//       imageWidth: image.width,
+//       imageMean: 127.5, // For normalization if needed
+//       imageStd: 127.5, // For normalization if needed
+//       rotation: 90,
+//       numResults: 1, // Limit number of results
+//       threshold: 0.3, // Detection confidence threshold
+//       asynch: true,
+//     );
+//     print('Inference results: $results');
+//     if (results != null && results.isNotEmpty) {
+//       var result = results.first;
+//       return {
+//         'label': result['label'],
+//         'confidence': result['confidence'],
+//       };
+//     }
+//     return {
+//       'label': 'No disease detected',
+//       'confidence': 0.0,
+//     };
+//   }
 
-  @override
-  void dispose() {
-    _cameraController?.stopImageStream();
-    _cameraController?.dispose();
-    Tflite.close();
-    super.dispose();
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+//   @override
+//   void dispose() {
+//     _cameraController?.stopImageStream();
+//     _cameraController?.dispose();
+//     Tflite.close();
+//     super.dispose();
+//   }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Pechay Disease Detection",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: const Color.fromARGB(255, 98, 218, 18),
-      ),
-      body: Column(
-        children: [
-          // Camera preview section
-          Expanded(
-            flex: 2,
-            child: Stack(
-              children: [
-                CameraPreview(_cameraController!),
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      detectionResult != null
-                          ? "$detectionResult\nConfidence: ${(detectionConfidence ?? 0.0 * 100).toStringAsFixed(2)}%"
-                          : "Detecting...",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+//   @override
+//   Widget build(BuildContext context) {
+//     if (_cameraController == null || !_cameraController!.value.isInitialized) {
+//       return const Scaffold(
+//         body: Center(child: CircularProgressIndicator()),
+//       );
+//     }
 
-          // Recommendations section
-          Expanded(
-            flex: 1,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_recognitions1 != null)
-                    Card(
-                      child: Column(
-                        children: [
-                          const ListTile(
-                            title: Text(
-                              "Details:",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                                color: Color.fromARGB(255, 86, 54, 244),
-                              ),
-                            ),
-                          ),
-                          ..._recognitions1!.map((recognition) {
-                            return ListTile(
-                              title: Text(
-                                "Label: ${recognition['label']}",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              subtitle: Text(
-                                "Confidence Level: ${(recognition['confidence'] * 100).toStringAsFixed(2)}%",
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                  ..._getRecommendationCards(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
- 
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text(
+//           "Pechay Disease Detection",
+//           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+//         ),
+//         backgroundColor: const Color.fromARGB(255, 98, 218, 18),
+//       ),
+//       body: Column(
+//         children: [
+//           // Camera preview section
+//           Expanded(
+//             flex: 2,
+//             child: Stack(
+//               children: [
+//                 RotatedBox(
+//                   quarterTurns: 1, // Adjust this if needed
+//                   child: CameraPreview(_cameraController!),
+//                 ),
+//                 Positioned(
+//                   bottom: 16,
+//                   left: 16,
+//                   right: 16,
+//                   child: Container(
+//                     padding: const EdgeInsets.all(12),
+//                     decoration: BoxDecoration(
+//                       color: Colors.black.withOpacity(0.7),
+//                       borderRadius: BorderRadius.circular(8),
+//                     ),
+//                     child: Text(
+//                       detectionResult != null
+//                           ? "$detectionResult\nConfidence: ${(detectionConfidence ?? 0.0 * 100).toStringAsFixed(2)}%"
+//                           : "Detecting...",
+//                       style: const TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 18,
+//                       ),
+//                       textAlign: TextAlign.center,
+//                     ),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           // Capture Button
+//                 Padding(
+//                   padding: const EdgeInsets.all(16.0),
+//                   child: ElevatedButton.icon(
+//                     onPressed: _captureAndDetect,
+//                     icon: const Icon(Icons.camera_alt),
+//                     label: const Text("Capture & Detect"),
+//                     style: ElevatedButton.styleFrom(
+//                       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+//                       backgroundColor: Colors.green,
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(10),
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//         ],
+//       ),
+//     );
+//   }
+// }

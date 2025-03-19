@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_v2/tflite_v2.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 import 'result_page.dart';
@@ -21,6 +20,7 @@ class _CameraScannerState extends State<CameraScanner> {
   bool isDetecting = false;
   String detectionResult = "Detecting...";
   double detectionConfidence = 0.0;
+  bool isCapturing = false; // ✅ New: Track when capturing
 
   @override
   void initState() {
@@ -31,12 +31,11 @@ class _CameraScannerState extends State<CameraScanner> {
 
   Future<void> _initializeCamera() async {
     cameras = await availableCameras();
-    _cameraController = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
-    );
+    _cameraController = CameraController(cameras.first, ResolutionPreset.high);
 
     await _cameraController?.initialize();
+    await _loadModel(); // Ensure model is loaded before streaming
+
     if (!mounted) return;
     setState(() {});
     _startImageStream();
@@ -47,19 +46,29 @@ class _CameraScannerState extends State<CameraScanner> {
       if (!isDetecting) {
         isDetecting = true;
         var result = await _detectDisease(image);
+        
         if (mounted) {
-          setState(() {
-            detectionResult = result['label'] ?? "Unknown";
-            detectionConfidence = result['confidence'] ?? 0.0;
-          });
+          double newConfidence = result['confidence'] ?? 0.0;
+          
+          // Only update if confidence changes significantly
+          if ((newConfidence - detectionConfidence).abs() > 0.05) {
+            setState(() {
+              detectionResult = result['label'] ?? "Unknown";
+              detectionConfidence = newConfidence;
+            });
+          }
         }
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 300)); // Less delay
         isDetecting = false;
       }
     });
   }
 
+  bool _modelLoaded = false;
+
   Future<void> _loadModel() async {
+    if (_modelLoaded) return; // Prevent multiple loads
+    _modelLoaded = true; // Set flag
     await Tflite.loadModel(
       model: "assets/bokchoymodel.tflite",
       labels: "assets/petchay_labels.txt",
@@ -67,53 +76,73 @@ class _CameraScannerState extends State<CameraScanner> {
   }
 
   Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
-    var results = await Tflite.runModelOnFrame(
-      bytesList: image.planes.map((plane) => plane.bytes).toList(),
-      imageHeight: image.height,
-      imageWidth: image.width,
-      imageMean: 127.5,
-      imageStd: 127.5,
-      rotation: 90,
-      numResults: 1,
-      threshold: 0.3,
-      asynch: true,
-    );
+    try {
+      var results = await Tflite.runModelOnFrame(
+        bytesList: image.planes.map((plane) => plane.bytes).toList(),
+        imageHeight: image.height,
+        imageWidth: image.width,
+        imageMean: 127.5,
+        imageStd: 127.5,
+        rotation: 90,
+        numResults: 1,
+        threshold: 0.3,
+        asynch: true,
+      );
 
-    if (results != null && results.isNotEmpty) {
-      var result = results.first;
-      return {
-        'label': result['label'],
-        'confidence': result['confidence'],
-      };
+      if (results != null && results.isNotEmpty) {
+        var result = results.first;
+        return {
+          'label': result['label'],
+          'confidence': result['confidence'],
+        };
+      }
+    } catch (e) {
+      debugPrint("Error during detection: $e");
     }
+
     return {'label': 'No disease detected', 'confidence': 0.0};
   }
 
+
   Future<void> _captureImage() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+  if (_cameraController == null || !_cameraController!.value.isInitialized) return;
 
-    try {
-      XFile file = await _cameraController!.takePicture();
-      Position? position = await _getCurrentLocation();
-      String imageUrl = await _uploadImage(File(file.path));
+  setState(() => isCapturing = true); // Show loading
 
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ResultPage(
-              detectionResult: detectionResult,
-              detectionConfidence: detectionConfidence,
-              imageUrl: imageUrl,
-              position: position,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint("Error capturing image: $e");
+  try {
+    XFile file = await _cameraController!.takePicture();
+    File imageFile = File(file.path);
+    Position? position = await _getCurrentLocation();
+    String imageUrl = await _uploadImage(imageFile);
+
+    if (imageUrl.isEmpty) {
+      throw Exception("Image upload failed");
     }
+
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResultPage(
+            detectionResult: detectionResult,
+            detectionConfidence: detectionConfidence,
+            capturedImage: file,
+          ),
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint("Error capturing image: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to capture image. Please try again.")),
+      );
+    }
+  } finally {
+    setState(() => isCapturing = false);
   }
+}
+
 
   Future<String> _uploadImage(File imageFile) async {
     try {
@@ -128,49 +157,49 @@ class _CameraScannerState extends State<CameraScanner> {
   }
 
   Future<Position?> _getCurrentLocation() async {
-  bool serviceEnabled;
-  LocationPermission permission;
-
-  // Check if location services are enabled
-  serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
-    debugPrint("Location services are disabled.");
-    return null;
-  }
-
-  // Check location permissions
-  permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {
-      debugPrint("Location permission denied.");
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Location Required"),
+            content: const Text("Please enable location services to proceed."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
       return null;
     }
-  }
 
-  if (permission == LocationPermission.deniedForever) {
-    debugPrint("Location permission is permanently denied.");
-    return null;
-  }
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return null;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      return null;
+    }
 
-  try {
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-    return position;
-  } catch (e) {
-    debugPrint("Failed to get location: $e");
-    return null;
+    return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
-}
 
 
   @override
-  void dispose() {
-    _cameraController?.dispose();
-    Tflite.close();
-    super.dispose();
-  }
+void dispose() {
+  _cameraController?.stopImageStream(); // Stop the stream before closing the model
+  _cameraController?.dispose();
+  Tflite.close(); // Close the model safely
+  super.dispose();
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -187,37 +216,58 @@ class _CameraScannerState extends State<CameraScanner> {
       ),
       body: Stack(
         children: [
-          CameraPreview(_cameraController!),
+          // ✅ Camera Preview covering most of the screen
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _cameraController!.value.previewSize!.height,
+                height: _cameraController!.value.previewSize!.width,
+                child: RotatedBox(
+                  quarterTurns: 1,
+                  child: CameraPreview(_cameraController!),
+                ),
+              ),
+            ),
+          ),
 
-          // Detection Result Overlay
+
+          // ✅ Detection result box
           Positioned(
-            bottom: 150,
+            bottom: 180, // ✅ Adjusted position
             left: 20,
             right: 20,
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 "$detectionResult\nConfidence: ${(detectionConfidence * 100).toStringAsFixed(2)}%",
-                style: const TextStyle(color: Colors.white, fontSize: 18),
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ),
           ),
 
-          // Capture Button
+          // ✅ Capture Button
           Positioned(
             bottom: 50,
             left: 0,
             right: 0,
             child: Center(
-              child: FloatingActionButton(
-                backgroundColor: Colors.green,
-                onPressed: _captureImage,
-                child: const Icon(Icons.camera_alt, size: 32),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  FloatingActionButton(
+                    backgroundColor: Colors.green,
+                    onPressed: isCapturing ? null : _captureImage, // ✅ Disable button while capturing
+                    child: const Icon(Icons.camera_alt, size: 32),
+                  ),
+                  if (isCapturing)
+                    const CircularProgressIndicator(), // ✅ Show loading when capturing
+                ],
               ),
             ),
           ),
