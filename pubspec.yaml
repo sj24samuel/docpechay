@@ -48,6 +48,9 @@ dependencies:
   permission_handler: ^11.4.0
   geolocator: ^13.0.2
   fl_chart: ^0.70.2
+  flutter_sticky_header: ^0.7.0
+  sticky_headers: ^0.3.0+2
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
