@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:docpechayapp/pages/user_profile/signup.dart';
-import 'package:docpechayapp/pages/Navigation.dart';
+import 'package:docpechayapp/pages/user_pages/Navigation.dart';
 
 
 class LoginPage extends StatefulWidget {

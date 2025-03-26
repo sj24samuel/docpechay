@@ -1,5 +1,5 @@
-import 'package:docpechayapp/pages/AboutUs.dart';
-import 'package:docpechayapp/pages/FAQ.dart';
+import 'package:docpechayapp/pages/user_pages/AboutUs.dart';
+import 'package:docpechayapp/pages/user_pages/FAQ.dart';
 import 'package:flutter/material.dart';
 
 class SettingsPage extends StatefulWidget {
