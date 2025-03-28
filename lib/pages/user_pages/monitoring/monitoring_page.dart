@@ -15,12 +15,55 @@ class MonitoringPage extends StatefulWidget {
 class _MonitoringPageState extends State<MonitoringPage> {
   String searchQuery = "";
 
+  void _showSearchDialog() {
+    TextEditingController searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Search Disease"),
+          content: TextField(
+            controller: searchController,
+            decoration: const InputDecoration(
+              hintText: "Enter disease name...",
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  searchQuery = searchController.text;
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text("Search"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text("Cancel"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Monitoring Page"),
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: _showSearchDialog, // Opens the search popup
+          ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -70,54 +113,13 @@ class _MonitoringPageState extends State<MonitoringPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   color: Colors.green.shade300,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        month,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 10),
-                          height: 35,
-                          child: TextField(
-                            onChanged: (value) {
-                              setState(() {
-                                searchQuery = value;
-                              });
-                            },
-                            decoration: InputDecoration(
-                              hintText: "Search disease...",
-                              hintStyle: const TextStyle(color: Colors.white70),
-                              prefixIcon: const Icon(Icons.search, color: Colors.white),
-                              filled: true,
-                              fillColor: Colors.green.shade500,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 5),
-                            ),
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.white),
-                        onSelected: (value) {
-                          // Add sorting/filtering logic if needed
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(value: "Sort by Date", child: Text("Sort by Date")),
-                          const PopupMenuItem(value: "Sort by Confidence", child: Text("Sort by Confidence")),
-                        ],
-                      ),
-                    ],
+                  child: Text(
+                    month,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 content: Column(

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:docpechayapp/pages/user_pages/AboutUs.dart';
 import 'package:docpechayapp/pages/user_pages/calculation/Calculate.dart';
 import 'package:docpechayapp/pages/user_pages/FAQ.dart';
+import 'package:docpechayapp/pages/user_pages/monitoring/monitoring_nav.dart';
 //import 'package:docpechayapp/pages/new_camerascanner.dart';
 import 'package:docpechayapp/pages/user_profile/profile_completion_page.dart';
 import 'package:docpechayapp/pages/user_pages/scanning/camerascanner.dart';
@@ -11,7 +12,7 @@ import 'package:docpechayapp/pages/user_pages/databank.dart';
 import 'package:docpechayapp/pages/user_profile/userinfo.dart';
 import 'package:docpechayapp/pages/user_pages/scanning/treatmentbank.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:docpechayapp/pages/user_pages/monitoring/monitoring_page.dart';
+//import 'package:docpechayapp/pages/user_pages/monitoring/monitoring_page.dart';
 import 'package:flutter/material.dart';
 
 class Navigation extends StatefulWidget {
@@ -204,7 +205,7 @@ class _HomepageState extends State<Navigation> {
           },
         );
       case 9:
-        return const MonitoringPage(); // ✅ Monitoring Page added
+        return  MonitoringNav(); // ✅ Monitoring Page added
       default:
         return Container(); // Default page, you can replace it with another widget.
     }
