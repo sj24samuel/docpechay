@@ -1,19 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sticky_headers/sticky_headers.dart';
 
 import 'detection_detail_page.dart';
 
-class MonitoringPage extends StatefulWidget {
-  const MonitoringPage({super.key});
+class MonitoringCommunityPage extends StatefulWidget {
+  const MonitoringCommunityPage({super.key});
 
   @override
-  _MonitoringPageState createState() => _MonitoringPageState();
+  _MonitoringCommunityPageState createState() => _MonitoringCommunityPageState();
 }
 
-class _MonitoringPageState extends State<MonitoringPage> {
+class _MonitoringCommunityPageState extends State<MonitoringCommunityPage> {
   String searchQuery = "";
 
   void _showSearchDialog() {
@@ -55,12 +54,10 @@ class _MonitoringPageState extends State<MonitoringPage> {
 
   @override
   Widget build(BuildContext context) {
-    String currentUserId = FirebaseAuth.instance.currentUser!.uid; // Get logged-in user ID
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Monitoring Page"),
-        backgroundColor: Colors.green,
+        title: const Text("Community Scans"),
+        backgroundColor: Colors.blue,
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -71,7 +68,6 @@ class _MonitoringPageState extends State<MonitoringPage> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('detection_results')
-            .where('userId', isEqualTo: currentUserId) // Fetch only user's data
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -118,7 +114,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
                 header: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
-                  color: Colors.green.shade300,
+                  color: Colors.blue.shade300,
                   child: Text(
                     month,
                     style: const TextStyle(

@@ -1,30 +1,25 @@
-//import 'package:docpechayapp/pages/user_pages/monitoring/monitoring_page.dart';
-//import 'package:docpechayapp/pages/new_camerascanner.dart';
-
+//guest navigation page
+import 'package:docpechayapp/pages/guest_pages/AboutUs.dart';
+import 'package:docpechayapp/pages/guest_pages/FAQ.dart';
+import 'package:docpechayapp/pages/guest_pages/SettingsPage.dart';
+import 'package:docpechayapp/pages/guest_pages/calculation/Calculate.dart';
+import 'package:docpechayapp/pages/guest_pages/databank.dart';
+import 'package:docpechayapp/pages/guest_pages/homescreen.dart';
+import 'package:docpechayapp/pages/guest_pages/scanning/camerascanner.dart';
+import 'package:docpechayapp/pages/guest_pages/treatmentbank.dart';
+import 'package:docpechayapp/pages/user_profile/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:docpechayapp/pages/user_profile/login_page.dart';
-import 'package:docpechayapp/pages/user_pages/AboutUs.dart';
-import 'package:docpechayapp/pages/user_pages/calculation/Calculate.dart';
-import 'package:docpechayapp/pages/user_pages/FAQ.dart';
-import 'package:docpechayapp/pages/user_pages/monitoring/monitoring_nav.dart';
-import 'package:docpechayapp/pages/user_profile/profile_completion_page.dart';
-import 'package:docpechayapp/pages/user_pages/scanning/camerascanner.dart';
-import 'package:docpechayapp/pages/user_pages/SettingsPage.dart';
-import 'package:docpechayapp/pages/user_pages/homescreen.dart';
-import 'package:docpechayapp/pages/user_pages/databank.dart';
-import 'package:docpechayapp/pages/user_profile/userinfo.dart';
-import 'package:docpechayapp/pages/user_pages/scanning/treatmentbank.dart';
 
-class Navigation extends StatefulWidget {
-  const Navigation({super.key});
+
+class Navigation_guest extends StatefulWidget {
+  const Navigation_guest({super.key});
 
   @override
   _HomepageState createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Navigation> {
+class _HomepageState extends State<Navigation_guest> {
   int _page = 0;
 
   Future<void> _logout() async {
@@ -130,16 +125,6 @@ class _HomepageState extends State<Navigation> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Monitoring'),
-              onTap: () {
-                setState(() {
-                  _page = 9;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.person),
               title: const Text('About Us'),
               onTap: () {
@@ -172,7 +157,7 @@ class _HomepageState extends State<Navigation> {
             const Divider(), // Add a divider before logout
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              title: const Text('Guest Sign out', style: TextStyle(color: Colors.red)),
               onTap: () {
                 _logout();
               },
@@ -187,22 +172,22 @@ class _HomepageState extends State<Navigation> {
   Widget getPage(int page) {
     switch (page) {
       case 0:
-        return const HomeWidget();
+        return const HomeWidget_guest();
       case 1:
-        return const CameraScanner();
+        return const CameraScanner_guest();
       case 2:
-        return const Calculate();
+        return const Calculate_guest();
       case 3:
-        return const AboutUs();
+        return const AboutUs_guest();
       case 4:
-        return const FAQ();
+        return const FAQ_guest();
       case 5:
-        return const SettingsPage();
+        return const SettingsPage_guest();
       case 6:
-        return const glossary_index();
+        return const glossary_index_guest();
       case 7:
-        return const Treatmentbank();
-      case 8:
+        return const Treatmentbank_guest();
+      /*case 8:
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection('users')
@@ -222,7 +207,7 @@ class _HomepageState extends State<Navigation> {
           },
         );
       case 9:
-        return MonitoringNav();
+        return MonitoringNav();*/
       default:
         return Container();
     }

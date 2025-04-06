@@ -1,4 +1,5 @@
 import 'package:docpechayapp/pages/user_pages/monitoring/monitor_dashboard.dart';
+import 'package:docpechayapp/pages/user_pages/monitoring/monitoring_community_page.dart';
 import 'package:flutter/material.dart';
 import 'monitoring_page.dart';
 //import 'community_scanned.dart';
@@ -17,7 +18,7 @@ class MonitoringNav extends StatelessWidget {
       home:  MonitoringDashboard(),
       routes: {
         '/monitoring_page': (context) => const MonitoringPage(),
-       // '/community_scanned': (context) => const CommunityScannedPage(),
+        '/community_scanned': (context) => const MonitoringCommunityPage(),
       },
     );
   }
