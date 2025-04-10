@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:docpechayapp/pages/user_profile/signup.dart';
 import 'package:docpechayapp/pages/user_pages/Navigation.dart';
+import 'package:docpechayapp/pages/guest_pages/Navigation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -103,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
               try {
                 await _authService.resetPassword(emailController.text.trim());
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Password reset email sent!")),
+                  const SnackBar(content: Text("Password reswaet email sent!")),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -147,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
               TextButton(
                 onPressed: () => Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => Navigation()),
+                  MaterialPageRoute(builder: (context) => Navigation_guest()),
                 ),
                 child: const Text("Continue as Guest"),
               ),
