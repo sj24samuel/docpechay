@@ -7,7 +7,7 @@ import 'login_page.dart';
 
 class ProfileCompletionPage extends StatefulWidget {
   final String uid;
-  ProfileCompletionPage({required this.uid});
+  const ProfileCompletionPage({required this.uid});
 
   @override
   _ProfileCompletionPageState createState() => _ProfileCompletionPageState();
@@ -47,59 +47,105 @@ class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
       imageUrl = await uploadImage(_image!);
     }
 
-    await FirebaseFirestore.instance.collection('users').doc(widget.uid).set({
+    final docSnapshot =
+        await FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+
+    await FirebaseFirestore.instance.collection('users').doc(widget.uid).update({
       'first_name': firstNameController.text.trim(),
       'middle_initial': middleInitialController.text.trim(),
       'last_name': lastNameController.text.trim(),
       'age': int.tryParse(ageController.text.trim()) ?? 0,
       'sex': selectedSex,
       'address': addressController.text.trim(),
-      'email': FirebaseFirestore.instance.collection('users').doc(widget.uid).get().then((value) => value['email']),
+      'email': docSnapshot['email'],
       'profile_picture': imageUrl ?? "",
     });
 
-    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Profile saved successfully!")),
+      const SnackBar(content: Text("Profile saved successfully!")),
     );
 
-    // Redirect to login page
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
 
+  InputDecoration buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Complete Your Profile")),
+      appBar: AppBar(title: const Text("Complete Your Profile")),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             GestureDetector(
               onTap: pickImage,
               child: CircleAvatar(
-                radius: 50,
+                radius: 55,
+                backgroundColor: Colors.grey.shade300,
                 backgroundImage: _image != null ? FileImage(_image!) : null,
-                child: _image == null ? Icon(Icons.camera_alt, size: 50) : null,
+                child: _image == null
+                    ? const Icon(Icons.camera_alt, size: 40, color: Colors.grey)
+                    : null,
               ),
             ),
-            SizedBox(height: 10),
-            TextField(controller: firstNameController, decoration: InputDecoration(labelText: "First Name")),
-            TextField(controller: middleInitialController, decoration: InputDecoration(labelText: "Middle Initial")),
-            TextField(controller: lastNameController, decoration: InputDecoration(labelText: "Last Name")),
-            TextField(controller: ageController, decoration: InputDecoration(labelText: "Age"), keyboardType: TextInputType.number),
+            const SizedBox(height: 20),
+            TextField(
+              controller: firstNameController,
+              decoration: buildInputDecoration("First Name"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: middleInitialController,
+              decoration: buildInputDecoration("Middle Initial"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: lastNameController,
+              decoration: buildInputDecoration("Last Name"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ageController,
+              decoration: buildInputDecoration("Age"),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: selectedSex,
+              decoration: buildInputDecoration("Sex"),
+              items: ["Male", "Female"]
+                  .map((sex) => DropdownMenuItem(value: sex, child: Text(sex)))
+                  .toList(),
               onChanged: (value) => setState(() => selectedSex = value),
-              items: ["Male", "Female"].map((sex) => DropdownMenuItem(value: sex, child: Text(sex))).toList(),
-              decoration: InputDecoration(labelText: "Sex"),
             ),
-            TextField(controller: addressController, decoration: InputDecoration(labelText: "Address")),
-            SizedBox(height: 20),
-            ElevatedButton(onPressed: saveUserProfile, child: Text("Save Profile")),
+            const SizedBox(height: 12),
+            TextField(
+              controller: addressController,
+              decoration: buildInputDecoration("Address"),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: saveUserProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4CAF50),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text("Save Profile", style: TextStyle(fontSize: 16)),
+            ),
           ],
         ),
       ),

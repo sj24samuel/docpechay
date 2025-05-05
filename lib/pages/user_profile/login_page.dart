@@ -121,38 +121,114 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: emailController,
-                decoration: InputDecoration(labelText: "Email"),
-                validator: (value) => value!.isEmpty || !value.contains("@") ? "Enter a valid email" : null,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/plantbg.gif',
+                    height: 120,
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Welcome Back!",
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "Login to continue",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Email Field
+                  TextFormField(
+                    controller: emailController,
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.email_outlined),
+                      labelText: "Email",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty || !value.contains("@") ? "Enter a valid email" : null,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Password Field
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.lock_outline),
+                      labelText: "Password",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty || value.length < 6 ? "Enter at least 6 characters" : null,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Login Button
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: login,
+                            child: const Text("Login", style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                  const SizedBox(height: 10),
+
+                  // Forgot Password
+                  TextButton(
+                    onPressed: showForgotPasswordDialog,
+                    child: const Text("Forgot Password?"),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Sign Up Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account? "),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => SignUpPage()),
+                        ),
+                        child: const Text(
+                          "Sign Up",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Continue as Guest
+                  TextButton(
+                    onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => Navigation_guest()),
+                    ),
+                    child: const Text("Continue as Guest"),
+                  ),
+                ],
               ),
-              TextFormField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: "Password"),
-                validator: (value) => value!.isEmpty || value.length < 6 ? "Enter at least 6 characters" : null,
-              ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(onPressed: login, child: const Text("Login")),
-              TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpPage())), child: const Text("Sign Up")),
-              TextButton(onPressed: showForgotPasswordDialog, child: const Text("Forgot Password?")),
-              TextButton(
-                onPressed: () => Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => Navigation_guest()),
-                ),
-                child: const Text("Continue as Guest"),
-              ),
-            ],
+            ),
           ),
         ),
       ),

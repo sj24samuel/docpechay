@@ -1,10 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ResultPage extends StatefulWidget {
   final String detectionResult;
@@ -26,7 +25,6 @@ class _ResultPageState extends State<ResultPage> {
   Position? _currentPosition;
   bool _isSaving = false;
   bool _isFetchingLocation = true;
-  String? _imageUrl;
   List<String> _recommendations = [];
 
   @override
@@ -37,16 +35,13 @@ class _ResultPageState extends State<ResultPage> {
 
   Future<void> _processResult() async {
     await Future.wait([
-      _getCurrentLocation(),
-      _uploadImage(),
+      //_getCurrentLocation(),
       _fetchRecommendations(),
     ]);
-    if (_currentPosition != null && _imageUrl != null) {
-      await _saveResultToFirestore();
-    }
+    await _saveResultToLocalStorage();
   }
 
-  Future<void> _getCurrentLocation() async {
+  /*Future<void> _getCurrentLocation() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         _showErrorDialog("Location services are disabled.");
@@ -68,94 +63,60 @@ class _ResultPageState extends State<ResultPage> {
       }
 
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.high,
+      );
 
       if (!mounted) return;
       setState(() {
         _currentPosition = position;
         _isFetchingLocation = false;
       });
-
     } catch (e) {
       debugPrint("Error fetching location: $e");
       _showErrorDialog("Failed to get location. Try again.");
     }
-  }
-
-  Future<void> _uploadImage() async {
-    if (widget.capturedImage == null) return;
-
-    try {
-      File imageFile = File(widget.capturedImage!.path);
-      String fileName = "detection_${DateTime.now().millisecondsSinceEpoch}.jpg";
-
-      Reference ref = FirebaseStorage.instance.ref().child('scanned_images/$fileName');
-      UploadTask uploadTask = ref.putFile(imageFile);
-
-      TaskSnapshot snapshot = await uploadTask;
-      String imageUrl = await snapshot.ref.getDownloadURL();
-
-      if (!mounted) return;
-      setState(() {
-        _imageUrl = imageUrl;
-      });
-
-    } catch (e) {
-      debugPrint("Error uploading image: $e");
-      _showErrorDialog("Failed to upload image. Please try again.");
-    }
-  }
+  }*/
 
   Future<void> _fetchRecommendations() async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('disease_info')
-          .where('disease_name', isEqualTo: widget.detectionResult)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        var data = querySnapshot.docs.first.data() as Map<String, dynamic>;
-        List<String> recommendations = List<String>.from(data['control'].values);
-
-        if (!mounted) return;
-        setState(() {
-          _recommendations = recommendations;
-        });
-      } else {
-        setState(() {
-          _recommendations = ["No specific recommendations available."];
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching recommendations: $e");
-      _showErrorDialog("Failed to fetch recommendations. Try again.");
-    }
+    await Future.delayed(const Duration(seconds: 1)); // mock delay
+    setState(() {
+      _recommendations = [
+        "Use organic pesticides.",
+        "Avoid overwatering.",
+        "Ensure proper sunlight exposure."
+      ];
+    });
   }
 
-  Future<void> _saveResultToFirestore() async {
+  Future<void> _saveResultToLocalStorage() async {
     setState(() => _isSaving = true);
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        debugPrint("User not logged in");
-        return;
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/detection_results.json';
+
+      File file = File(filePath);
+      List<dynamic> results = [];
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        results = jsonDecode(content);
       }
 
-      await FirebaseFirestore.instance.collection('detection_results').add({
-        'userId': user.uid,
-        'userEmail': user.email,
+      final newResult = {
         'disease': widget.detectionResult,
         'confidence': widget.detectionConfidence,
-        'imageUrl': _imageUrl,
+        'imagePath': widget.capturedImage?.path,
         'latitude': _currentPosition?.latitude,
         'longitude': _currentPosition?.longitude,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+        'timestamp': DateTime.now().toIso8601String(),
+      };
 
-      debugPrint("Detection result saved successfully.");
+      results.add(newResult);
+      await file.writeAsString(jsonEncode(results), flush: true);
+
+      _showSuccessDialog("Result saved to local storage.");
     } catch (e) {
-      debugPrint("Error saving result: $e");
+      debugPrint("Error saving locally: $e");
+      _showErrorDialog("Failed to save locally.");
     } finally {
       setState(() => _isSaving = false);
     }
@@ -166,6 +127,22 @@ class _ResultPageState extends State<ResultPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Success"),
         content: Text(message),
         actions: [
           TextButton(
@@ -197,17 +174,20 @@ class _ResultPageState extends State<ResultPage> {
 
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: _imageUrl != null
-                  ? Image.network(_imageUrl!, height: 250, width: double.infinity, fit: BoxFit.cover)
-                  : widget.capturedImage != null
-                      ? Image.file(File(widget.capturedImage!.path), height: 250, width: double.infinity, fit: BoxFit.cover)
-                      : Container(
-                          height: 250,
-                          width: double.infinity,
-                          color: Colors.grey[300],
-                          alignment: Alignment.center,
-                          child: const Text("No image available", style: TextStyle(fontSize: 16)),
-                        ),
+              child: widget.capturedImage != null
+                  ? Image.file(
+                      File(widget.capturedImage!.path),
+                      height: 250,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      height: 250,
+                      width: double.infinity,
+                      color: Colors.grey[300],
+                      alignment: Alignment.center,
+                      child: const Text("No image available", style: TextStyle(fontSize: 16)),
+                    ),
             ),
 
             const SizedBox(height: 16),
@@ -222,7 +202,7 @@ class _ResultPageState extends State<ResultPage> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            /*const SizedBox(height: 16),
 
             Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -236,7 +216,7 @@ class _ResultPageState extends State<ResultPage> {
                         ? Text("${_currentPosition!.latitude}, ${_currentPosition!.longitude}", style: const TextStyle(fontSize: 16))
                         : const Text("Location unavailable"),
               ),
-            ),
+            ),*/
 
             const SizedBox(height: 16),
 
@@ -252,19 +232,18 @@ class _ResultPageState extends State<ResultPage> {
                       children: [
                         Icon(Icons.tips_and_updates, color: Colors.green),
                         SizedBox(width: 8),
-                        Text(
-                          "Recommendations",
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
-                        ),
+                        Text("Recommendations", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
                       ],
                     ),
                     const Divider(),
                     _recommendations.isNotEmpty
                         ? Column(
-                            children: _recommendations.map((rec) => ListTile(
-                                  leading: const Icon(Icons.check_circle, color: Colors.green),
-                                  title: Text(rec, style: const TextStyle(fontSize: 16)),
-                                )).toList(),
+                            children: _recommendations
+                                .map((rec) => ListTile(
+                                      leading: const Icon(Icons.check_circle, color: Colors.green),
+                                      title: Text(rec, style: const TextStyle(fontSize: 16)),
+                                    ))
+                                .toList(),
                           )
                         : const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8.0),
@@ -274,7 +253,6 @@ class _ResultPageState extends State<ResultPage> {
                 ),
               ),
             ),
-
 
             const SizedBox(height: 20),
             if (_isSaving) const CircularProgressIndicator(),

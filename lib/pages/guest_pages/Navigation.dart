@@ -104,7 +104,7 @@ class _HomepageState extends State<Navigation_guest> {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
+            /*ListTile(
               leading: const Icon(Icons.person),
               title: const Text('My Info'),
               onTap: () {
@@ -113,7 +113,7 @@ class _HomepageState extends State<Navigation_guest> {
                 });
                 Navigator.pop(context);
               },
-            ),
+            ),*/
             ListTile(
               leading: const Icon(Icons.local_florist),
               title: const Text('Fertilizer & Pesticides Info'),
@@ -174,7 +174,7 @@ class _HomepageState extends State<Navigation_guest> {
       case 0:
         return const HomeWidget_guest();
       case 1:
-        return const CameraScanner_guest();
+        return ScannerPage();
       case 2:
         return const Calculate_guest();
       case 3:
