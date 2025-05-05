@@ -1,162 +1,111 @@
 import 'package:flutter/material.dart';
 
-
 class HomeWidget_guest extends StatelessWidget {
-  const HomeWidget_guest({Key? key});
+  const HomeWidget_guest({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      //backgroundColor: Theme.of(context).colorScheme.background,
-      //body: Container(
-      //color: const Color.fromARGB(255, 255, 255, 255),
-      child: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Card(
-                elevation: 10,
-                child: Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text(
-                        'Welcome to Pechay Doctor',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/images/plant1.jpg', // Path to local image asset
-                      height: 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(9.0),
-                      child: Container(
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Your friendly doctor here to assist you in identifying Pechay Disease ',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.justify,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                elevation: 10,
-                child: Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text(
-                        'Key Features',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/images/Aimage.gif', // Path to local image asset
-                      height: 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(9.0),
-                      child: Container(
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Our App is design to help you to identify some of the common disease in Pechay through the help of our AI system and help you to Calculate every the necessary treatment for your crops',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.justify,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                elevation: 10,
-                child: Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text(
-                        'Pechay Scanner',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/images/botanist.gif', // Path to local image asset
-                      height: 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(9.0),
-                      child: Container(
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'The Pechay Scanner is our very own develop AI that can detect common Pechay Disease from your own crops and will suggest a possible disease and recommend treatment to that said disease',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.justify,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                elevation: 10,
-                child: Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text(
-                        'Treatment Calculator',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/images/calculate.gif', // Path to local image asset
-                      height: 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(9.0),
-                      child: Container(
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'This feature will help you to calculate fertilizer and pesticide in your crop area',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.justify,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pechay Doctor'),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          _buildFeatureCard(
+            context: context,
+            title: 'Welcome to Pechay Doctor',
+            imagePath: 'assets/images/plant1.jpg',
+            description: 'Your friendly doctor to assist you in identifying Pechay diseases.',
           ),
-        ),
+          const SizedBox(height: 16),
+          _buildFeatureCard(
+            context: context,
+            title: 'Key Features',
+            imagePath: 'assets/images/Aimage.gif',
+            description: 'Our app is designed to help you identify common diseases in Pechay using AI, and guide you on proper treatment.',
+          ),
+          const SizedBox(height: 16),
+          _buildFeatureCard(
+            context: context,
+            title: 'Pechay Scanner',
+            imagePath: 'assets/images/botanist.gif',
+            description: 'The Pechay Scanner uses AI to detect common diseases and suggest treatments for your crops.',
+          ),
+          const SizedBox(height: 16),
+          _buildFeatureCard(
+            context: context,
+            title: 'Treatment Calculator',
+            imagePath: 'assets/images/calculate.gif',
+            description: 'Calculate the right amount of fertilizer and pesticide based on your crop area.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard({
+    required BuildContext context,
+    required String title,
+    required String imagePath,
+    required String description,
+    String? buttonLabel,
+    VoidCallback? onPressed,
+  }) {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.asset(
+              imagePath,
+              height: 200,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.justify,
+                ),
+                if (buttonLabel != null && onPressed != null) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onPressed,
+                      child: Text(buttonLabel),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        textStyle: const TextStyle(fontSize: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

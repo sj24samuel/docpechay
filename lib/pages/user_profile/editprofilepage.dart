@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String uid;
-  EditProfilePage({required this.uid});
+  const EditProfilePage({required this.uid, Key? key}) : super(key: key);
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -81,7 +81,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Profile updated successfully!")),
+      const SnackBar(content: Text("Profile updated successfully!")),
     );
 
     Navigator.pop(context);
@@ -90,40 +90,88 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Edit Profile")),
+      appBar: AppBar(title: const Text("Edit Profile"), centerTitle: true),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             GestureDetector(
               onTap: pickImage,
               child: CircleAvatar(
-                radius: 50,
+                radius: 60,
                 backgroundImage: _image != null
                     ? FileImage(_image!)
                     : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty
                         ? NetworkImage(_profileImageUrl!)
                         : null) as ImageProvider<Object>?,
                 child: _image == null && (_profileImageUrl == null || _profileImageUrl!.isEmpty)
-                    ? Icon(Icons.camera_alt, size: 50)
+                    ? const Icon(Icons.camera_alt, size: 50)
                     : null,
               ),
             ),
-            SizedBox(height: 10),
-            TextField(controller: firstNameController, decoration: InputDecoration(labelText: "First Name")),
-            TextField(controller: middleInitialController, decoration: InputDecoration(labelText: "Middle Initial")),
-            TextField(controller: lastNameController, decoration: InputDecoration(labelText: "Last Name")),
-            TextField(controller: ageController, decoration: InputDecoration(labelText: "Age"), keyboardType: TextInputType.number),
-            DropdownButtonFormField<String>(
-              value: selectedSex,
-              onChanged: (value) => setState(() => selectedSex = value),
-              items: ["Male", "Female"].map((sex) => DropdownMenuItem(value: sex, child: Text(sex))).toList(),
-              decoration: InputDecoration(labelText: "Sex"),
+            const SizedBox(height: 16),
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  children: [
+                    _buildTextField(firstNameController, "First Name"),
+                    _buildTextField(middleInitialController, "Middle Initial"),
+                    _buildTextField(lastNameController, "Last Name"),
+                    _buildTextField(ageController, "Age", keyboardType: TextInputType.number),
+                    _buildDropdownField(),
+                    _buildTextField(addressController, "Address"),
+                  ],
+                ),
+              ),
             ),
-            TextField(controller: addressController, decoration: InputDecoration(labelText: "Address")),
-            SizedBox(height: 20),
-            ElevatedButton(onPressed: updateUserProfile, child: Text("Save Changes")),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: updateUserProfile,
+                icon: const Icon(Icons.save),
+                label: const Text("Save Changes", style: TextStyle(fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, {TextInputType? keyboardType}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: selectedSex,
+        onChanged: (value) => setState(() => selectedSex = value),
+        items: ["Male", "Female"]
+            .map((sex) => DropdownMenuItem(value: sex, child: Text(sex)))
+            .toList(),
+        decoration: InputDecoration(
+          labelText: "Sex",
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );

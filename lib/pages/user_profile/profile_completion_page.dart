@@ -82,73 +82,118 @@ class _ProfileCompletionPageState extends State<ProfileCompletionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Complete Your Profile")),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        title: const Text("Complete Your Profile"),
+        backgroundColor: const Color(0xFF4CAF50),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: pickImage,
-              child: CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.grey.shade300,
-                backgroundImage: _image != null ? FileImage(_image!) : null,
-                child: _image == null
-                    ? const Icon(Icons.camera_alt, size: 40, color: Colors.grey)
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: firstNameController,
-              decoration: buildInputDecoration("First Name"),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: middleInitialController,
-              decoration: buildInputDecoration("Middle Initial"),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: lastNameController,
-              decoration: buildInputDecoration("Last Name"),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ageController,
-              decoration: buildInputDecoration("Age"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: selectedSex,
-              decoration: buildInputDecoration("Sex"),
-              items: ["Male", "Female"]
-                  .map((sex) => DropdownMenuItem(value: sex, child: Text(sex)))
-                  .toList(),
-              onChanged: (value) => setState(() => selectedSex = value),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: addressController,
-              decoration: buildInputDecoration("Address"),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: saveUserProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+        child: Center(
+          child: Column(
+            children: [
+              // Profile picture section
+              GestureDetector(
+                onTap: pickImage,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: _image != null ? FileImage(_image!) : null,
+                      child: _image == null
+                          ? const Icon(Icons.person, size: 60, color: Colors.white70)
+                          : null,
+                    ),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: const Color(0xFF4CAF50),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                    ),
+                  ],
                 ),
               ),
-              child: const Text("Save Profile", style: TextStyle(fontSize: 16)),
-            ),
-          ],
+              const SizedBox(height: 30),
+
+              // Form container
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      _buildTextField("First Name", firstNameController),
+                      const SizedBox(height: 12),
+                      _buildTextField("Middle Initial", middleInitialController),
+                      const SizedBox(height: 12),
+                      _buildTextField("Last Name", lastNameController),
+                      const SizedBox(height: 12),
+                      _buildTextField("Age", ageController, keyboardType: TextInputType.number),
+                      const SizedBox(height: 12),
+                      _buildDropdownField(),
+                      const SizedBox(height: 12),
+                      _buildTextField("Address", addressController),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Save button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: saveUserProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text("Save Profile", style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text}) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return DropdownButtonFormField<String>(
+      value: selectedSex,
+      decoration: InputDecoration(
+        labelText: "Sex",
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      items: ["Male", "Female"]
+          .map((sex) => DropdownMenuItem(value: sex, child: Text(sex)))
+          .toList(),
+      onChanged: (value) => setState(() => selectedSex = value),
     );
   }
 }
