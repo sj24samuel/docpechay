@@ -19,7 +19,7 @@ class _SignUpPageState extends State<SignUpPage> {
     String password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).show(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Email and password are required!")),
       );
       return;
