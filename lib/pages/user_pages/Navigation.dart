@@ -100,21 +100,21 @@ class _HomepageState extends State<Navigation> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.book),
-              title: const Text('Disease Glossary'),
-              onTap: () {
-                setState(() {
-                  _page = 6;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.person),
               title: const Text('My Info'),
               onTap: () {
                 setState(() {
                   _page = 8;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.book),
+              title: const Text('Disease Glossary'),
+              onTap: () {
+                setState(() {
+                  _page = 6;
                 });
                 Navigator.pop(context);
               },

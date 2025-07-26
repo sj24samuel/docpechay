@@ -29,10 +29,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _loadUserData();
   }
 
+  @override
+  void dispose() {
+    firstNameController.dispose();
+    middleInitialController.dispose();
+    lastNameController.dispose();
+    ageController.dispose();
+    addressController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
     DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+    if (!mounted) return;
+
     if (userDoc.exists) {
       var userData = userDoc.data() as Map<String, dynamic>;
+      if (!mounted) return;
       setState(() {
         firstNameController.text = userData['first_name'] ?? '';
         middleInitialController.text = userData['middle_initial'] ?? '';
@@ -47,7 +60,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    if (pickedFile != null && mounted) {
       setState(() => _image = File(pickedFile.path));
     }
   }
@@ -64,10 +77,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> updateUserProfile() async {
-    String? imageUrl = _profileImageUrl;
+    String? imageUrl = _profileImageUrl; // Preserve existing image if none selected
 
     if (_image != null) {
       imageUrl = await uploadImage(_image!);
+      if (!mounted) return;
     }
 
     await FirebaseFirestore.instance.collection('users').doc(widget.uid).update({
@@ -80,6 +94,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'profile_picture': imageUrl ?? "",
     });
 
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Profile updated successfully!")),
     );
@@ -89,6 +105,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final hasProfile = _profileImageUrl != null && _profileImageUrl!.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Edit Profile"), centerTitle: true),
       body: SingleChildScrollView(
@@ -101,10 +119,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 radius: 60,
                 backgroundImage: _image != null
                     ? FileImage(_image!)
-                    : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                        ? NetworkImage(_profileImageUrl!)
-                        : null) as ImageProvider<Object>?,
-                child: _image == null && (_profileImageUrl == null || _profileImageUrl!.isEmpty)
+                    : (hasProfile ? NetworkImage(_profileImageUrl!) : null) as ImageProvider<Object>?,
+                child: _image == null && !hasProfile
                     ? const Icon(Icons.camera_alt, size: 50)
                     : null,
               ),

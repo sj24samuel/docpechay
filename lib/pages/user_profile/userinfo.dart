@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:docpechayapp/pages/user_profile/editprofilepage.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,8 @@ class UserInfoPage extends StatelessWidget {
           }
 
           final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final profilePic = userData['profile_picture'];
+          final hasProfilePic = profilePic != null && profilePic is String && profilePic.isNotEmpty;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -33,11 +36,14 @@ class UserInfoPage extends StatelessWidget {
                 Center(
                   child: CircleAvatar(
                     radius: 60,
-                    backgroundImage: userData['profile_picture'] != null && userData['profile_picture'] != ""
-                        ? NetworkImage(userData['profile_picture'])
+                    backgroundColor: Colors.grey.shade300,
+                    backgroundImage: hasProfilePic
+                        ? NetworkImage(profilePic)
+                        // Uncomment the next line if you're using a local default image
+                        // : const AssetImage('assets/images/default_profile.png') as ImageProvider,
                         : null,
-                    child: (userData['profile_picture'] == null || userData['profile_picture'] == "")
-                        ? const Icon(Icons.person, size: 60)
+                    child: !hasProfilePic
+                        ? const Icon(Icons.person, size: 60, color: Colors.white)
                         : null,
                   ),
                 ),
@@ -58,7 +64,7 @@ class UserInfoPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -72,6 +78,22 @@ class UserInfoPage extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.edit),
                   label: const Text("Edit Profile", style: TextStyle(fontSize: 16)),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const UpdatePasswordDialog(),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.lock),
+                  label: const Text("Update My Password", style: TextStyle(fontSize: 16)),
                 ),
               ],
             ),
@@ -110,6 +132,103 @@ class ProfileDetailRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class UpdatePasswordDialog extends StatefulWidget {
+  const UpdatePasswordDialog({Key? key}) : super(key: key);
+
+  @override
+  _UpdatePasswordDialogState createState() => _UpdatePasswordDialogState();
+}
+
+class _UpdatePasswordDialogState extends State<UpdatePasswordDialog> {
+  final TextEditingController currentPasswordController = TextEditingController();
+  final TextEditingController newPasswordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool isLoading = false;
+
+  Future<void> updatePassword() async {
+    setState(() => isLoading = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser!;
+      final email = user.email!;
+
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: currentPasswordController.text,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPasswordController.text);
+
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password updated successfully.')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Something went wrong.";
+      if (e.code == 'wrong-password') {
+        message = "Current password is incorrect.";
+      } else if (e.code == 'weak-password') {
+        message = "Password should be at least 6 characters.";
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Update Password"),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: currentPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Current Password"),
+              validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+            ),
+            TextFormField(
+              controller: newPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "New Password"),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Required';
+                if (value.length < 6) return 'Minimum 6 characters';
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: isLoading ? null : () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: isLoading
+              ? null
+              : () {
+                  if (_formKey.currentState!.validate()) {
+                    updatePassword();
+                  }
+                },
+          child: isLoading
+              ? const SizedBox(
+                  width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text("Update"),
+        ),
+      ],
     );
   }
 }

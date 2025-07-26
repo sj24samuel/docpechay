@@ -11,16 +11,26 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool isLoading = false;
 
   Future<void> signUp() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email and password are required!")),
+        const SnackBar(content: Text("All fields are required!")),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Passwords do not match!")),
       );
       return;
     }
@@ -77,7 +87,7 @@ class _SignUpPageState extends State<SignUpPage> {
     } catch (e) {
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Something went wrong. Please try again later.")),
+        const SnackBar(content: Text("Something went wrong. Please try again later.")),
       );
     }
   }
@@ -127,6 +137,19 @@ class _SignUpPageState extends State<SignUpPage> {
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.lock_outline),
                         labelText: "Password",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    TextField(
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.lock_outline),
+                        labelText: "Confirm Password",
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
