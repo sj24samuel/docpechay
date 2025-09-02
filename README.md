@@ -44,21 +44,25 @@ https://console.firebase.google.com/u/0/project/drpechay-2025/settings/serviceac
 
 ## Permissions
 
-Android → android/app/src/main/AndroidManifest.xml
+Android → ```android/app/src/main/AndroidManifest.xml```
+```bash
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.CAMERA"/>
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-
-iOS → ios/Runner/Info.plist
+```
+iOS → ```ios/Runner/Info.plist```
+```bash
 <key>NSCameraUsageDescription</key>
 <string>We need camera access for plant disease detection.</string>
 <key>NSLocationWhenInUseUsageDescription</key>
 <string>We need location access to tag your scans with GPS data.</string>
-
+```
 ## Build Release
+```bash
 flutter build apk
 flutter build appbundle    # for Google Play Store
+```
 
 
 
