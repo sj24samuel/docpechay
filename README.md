@@ -37,9 +37,10 @@ flutter run
 ## Firebase Setup
 
 - Download Config File and Generate Private Key
+```bash
 https://console.firebase.google.com/u/0/project/drpechay-2025/settings/serviceaccounts/adminsdk
-
-- Add Config File to android/app/google-services.json
+```
+- Add Config File to ```android/app/google-services.json```
 
 ## Permissions
 
@@ -58,5 +59,6 @@ iOS → ios/Runner/Info.plist
 ## Build Release
 flutter build apk
 flutter build appbundle    # for Google Play Store
+
 
 
