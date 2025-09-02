@@ -7,21 +7,27 @@ The app integrates with **Firebase** for authentication, Firestore for storing u
 
 ## 🚀 Quick Start
 
-```bash
+
 # 1. Install Flutter (stable channel) and add it to PATH
 # 2. Verify installation
+```bash
 flutter doctor -v
+```
 
 # 3. Clone this repository
+```bash
 git clone https://github.com/sj24samuel/docpechay.git
-cd pechay-disease-detection
-
+```
 # 4. Install dependencies
+```bash
 flutter pub get
-
+flutter pub upgrade
+```
 # 5. Run the app
+```bash
+flutter clean
+flutter pub get
 flutter run
-
 ```
 
 ## 📋 Prerequisites
@@ -63,6 +69,7 @@ iOS → ```ios/Runner/Info.plist```
 flutter build apk
 flutter build appbundle    # for Google Play Store
 ```
+
 
 
 
