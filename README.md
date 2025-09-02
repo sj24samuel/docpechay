@@ -22,7 +22,7 @@ flutter pub get
 # 5. Run the app
 flutter run
 
-```bash
+```
 
 ## 📋 Prerequisites
 
@@ -58,4 +58,5 @@ iOS → ios/Runner/Info.plist
 ## Build Release
 flutter build apk
 flutter build appbundle    # for Google Play Store
+
 
