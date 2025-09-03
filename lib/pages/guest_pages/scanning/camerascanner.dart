@@ -65,15 +65,22 @@ class _ScannerPageState extends State<ScannerPage> {
     });
   }
 
-  Future<void> _loadModel() async {
-    if (_modelLoaded) return;
-    _modelLoaded = true;
+Future<void> _loadModel() async {
+  if (_modelLoaded) return; // Prevent multiple loads
+  _modelLoaded = true; // Set flag
 
-    await Tflite.loadModel(
+  try {
+    debugPrint("LOG: Loading TFLite model...");
+    String? res = await Tflite.loadModel(
       model: "assets/bokchoymodel.tflite",
       labels: "assets/petchay_labels.txt",
     );
+    debugPrint("LOG: Model loaded result: $res");
+  } catch (e, s) {
+    debugPrint("ERROR: Failed to load TFLite model: $e");
+    debugPrint("$s");
   }
+}
 
   Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
     try {

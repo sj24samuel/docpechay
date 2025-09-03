@@ -46,10 +46,10 @@ class _CameraScannerState extends State<CameraScanner> {
       if (!isDetecting) {
         isDetecting = true;
         var result = await _detectDisease(image);
-        
+
         if (mounted) {
           double newConfidence = result['confidence'] ?? 0.0;
-          
+
           // Only update if confidence changes significantly
           if ((newConfidence - detectionConfidence).abs() > 0.05) {
             setState(() {
@@ -66,14 +66,22 @@ class _CameraScannerState extends State<CameraScanner> {
 
   bool _modelLoaded = false;
 
-  Future<void> _loadModel() async {
-    if (_modelLoaded) return; // Prevent multiple loads
-    _modelLoaded = true; // Set flag
-    await Tflite.loadModel(
+Future<void> _loadModel() async {
+  if (_modelLoaded) return; // Prevent multiple loads
+  _modelLoaded = true; // Set flag
+
+  try {
+    debugPrint("LOG: Loading TFLite model...");
+    String? res = await Tflite.loadModel(
       model: "assets/bokchoymodel.tflite",
       labels: "assets/petchay_labels.txt",
     );
+    debugPrint("LOG: Model loaded result: $res");
+  } catch (e, s) {
+    debugPrint("ERROR: Failed to load TFLite model: $e");
+    debugPrint("$s");
   }
+}
 
   Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
     try {
@@ -192,7 +200,7 @@ class _CameraScannerState extends State<CameraScanner> {
   }
 
 
-  @override
+@override
 void dispose() {
   _cameraController?.stopImageStream(); // Stop the stream before closing the model
   _cameraController?.dispose();
