@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:tflite_v2/tflite_v2.dart';
 import 'package:docpechayapp/pages/guest_pages/scanning/result_page.dart';
+import 'package:docpechayapp/services/tflite_service.dart';
 
 class ScannerPage extends StatefulWidget {
   const ScannerPage({Key? key}) : super(key: key);
@@ -22,11 +22,13 @@ class _ScannerPageState extends State<ScannerPage> {
   String detectionResult = "Detecting...";
   double detectionConfidence = 0.0;
 
+  final _tfliteService = TFLiteService();
+
   @override
   void initState() {
     super.initState();
     _initializeCamera();
-    _loadModel();
+    _tfliteService.loadModel();
   }
 
   Future<void> _initializeCamera() async {
@@ -45,7 +47,7 @@ class _ScannerPageState extends State<ScannerPage> {
       if (!isDetecting) {
         isDetecting = true;
 
-        var result = await _detectDisease(image);
+        var result = await _tfliteService.detectDisease(image);
 
         if (mounted) {
           double newConfidence = result['confidence'] ?? 0.0;
@@ -63,51 +65,6 @@ class _ScannerPageState extends State<ScannerPage> {
         isDetecting = false;
       }
     });
-  }
-
-Future<void> _loadModel() async {
-  if (_modelLoaded) return; // Prevent multiple loads
-  _modelLoaded = true; // Set flag
-
-  try {
-    debugPrint("LOG: Loading TFLite model...");
-    String? res = await Tflite.loadModel(
-      model: "assets/bokchoymodel.tflite",
-      labels: "assets/petchay_labels.txt",
-    );
-    debugPrint("LOG: Model loaded result: $res");
-  } catch (e, s) {
-    debugPrint("ERROR: Failed to load TFLite model: $e");
-    debugPrint("$s");
-  }
-}
-
-  Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
-    try {
-      var results = await Tflite.runModelOnFrame(
-        bytesList: image.planes.map((plane) => plane.bytes).toList(),
-        imageHeight: image.height,
-        imageWidth: image.width,
-        imageMean: 127.5,
-        imageStd: 127.5,
-        rotation: 90,
-        numResults: 1,
-        threshold: 0.3,
-        asynch: true,
-      );
-
-      if (results != null && results.isNotEmpty) {
-        var result = results.first;
-        return {
-          'label': result['label'],
-          'confidence': result['confidence'],
-        };
-      }
-    } catch (e) {
-      debugPrint("Error during detection: $e");
-    }
-
-    return {'label': 'No disease detected', 'confidence': 0.0};
   }
 
   Future<void> _captureImage() async {
@@ -146,7 +103,7 @@ Future<void> _loadModel() async {
   void dispose() {
     _cameraController?.stopImageStream();
     _cameraController?.dispose();
-    Tflite.close();
+    _tfliteService.dispose();
     super.dispose();
   }
 

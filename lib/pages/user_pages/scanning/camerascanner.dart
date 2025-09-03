@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:tflite_v2/tflite_v2.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 import 'result_page.dart';
+import 'package:docpechayapp/services/tflite_service.dart';
 
 class CameraScanner extends StatefulWidget {
   const CameraScanner({super.key});
@@ -20,13 +20,15 @@ class _CameraScannerState extends State<CameraScanner> {
   bool isDetecting = false;
   String detectionResult = "Detecting...";
   double detectionConfidence = 0.0;
-  bool isCapturing = false; // ✅ New: Track when capturing
+  bool isCapturing = false;
+
+  final _tfliteService = TFLiteService();
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
-    _loadModel();
+    _tfliteService.loadModel();
   }
 
   Future<void> _initializeCamera() async {
@@ -34,7 +36,7 @@ class _CameraScannerState extends State<CameraScanner> {
     _cameraController = CameraController(cameras.first, ResolutionPreset.high);
 
     await _cameraController?.initialize();
-    await _loadModel(); // Ensure model is loaded before streaming
+    await _tfliteService.loadModel(); // Ensure model is loaded before streaming
 
     if (!mounted) return;
     setState(() {});
@@ -45,7 +47,7 @@ class _CameraScannerState extends State<CameraScanner> {
     _cameraController?.startImageStream((CameraImage image) async {
       if (!isDetecting) {
         isDetecting = true;
-        var result = await _detectDisease(image);
+        var result = await _tfliteService.detectDisease(image);
 
         if (mounted) {
           double newConfidence = result['confidence'] ?? 0.0;
@@ -65,51 +67,6 @@ class _CameraScannerState extends State<CameraScanner> {
   }
 
   bool _modelLoaded = false;
-
-Future<void> _loadModel() async {
-  if (_modelLoaded) return; // Prevent multiple loads
-  _modelLoaded = true; // Set flag
-
-  try {
-    debugPrint("LOG: Loading TFLite model...");
-    String? res = await Tflite.loadModel(
-      model: "assets/bokchoymodel.tflite",
-      labels: "assets/petchay_labels.txt",
-    );
-    debugPrint("LOG: Model loaded result: $res");
-  } catch (e, s) {
-    debugPrint("ERROR: Failed to load TFLite model: $e");
-    debugPrint("$s");
-  }
-}
-
-  Future<Map<String, dynamic>> _detectDisease(CameraImage image) async {
-    try {
-      var results = await Tflite.runModelOnFrame(
-        bytesList: image.planes.map((plane) => plane.bytes).toList(),
-        imageHeight: image.height,
-        imageWidth: image.width,
-        imageMean: 127.5,
-        imageStd: 127.5,
-        rotation: 90,
-        numResults: 1,
-        threshold: 0.3,
-        asynch: true,
-      );
-
-      if (results != null && results.isNotEmpty) {
-        var result = results.first;
-        return {
-          'label': result['label'],
-          'confidence': result['confidence'],
-        };
-      }
-    } catch (e) {
-      debugPrint("Error during detection: $e");
-    }
-
-    return {'label': 'No disease detected', 'confidence': 0.0};
-  }
 
 
   Future<void> _captureImage() async {
@@ -204,7 +161,7 @@ Future<void> _loadModel() async {
 void dispose() {
   _cameraController?.stopImageStream(); // Stop the stream before closing the model
   _cameraController?.dispose();
-  Tflite.close(); // Close the model safely
+   _tfliteService.dispose();
   super.dispose();
 }
 
