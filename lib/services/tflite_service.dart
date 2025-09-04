@@ -37,8 +37,8 @@ class TFLiteService {
         imageMean: 127.5,
         imageStd: 127.5,
         rotation: 90,
-        numResults: 1,
-        threshold: 0.3,
+        numResults: 6,
+        threshold: 0.0,
         asynch: true,
       );
 
