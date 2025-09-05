@@ -71,7 +71,7 @@ class _CameraScannerState extends State<CameraScanner> {
       // Use the appropriate delegate for your model if needed.
       // For the Flex ops issue, you need to add the dependency
       // 'org.tensorflow:tensorflow-lite-select-tf-ops' in Android.
-      _interpreter = await Interpreter.fromAsset('assets/bokchoymodel.tflite', options: options);
+      _interpreter = await Interpreter.fromAsset('assets/model(Sept 2025).tflite', options: options);
       debugPrint("✅ Model loaded");
 
       // Print model input/output info
