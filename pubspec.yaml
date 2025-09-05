@@ -99,6 +99,7 @@ flutter:
     - assets/images/fertilizerandpesticides/Mancozeb.jfif
     - assets/images/fertilizerandpesticides/Chlorothalonil.jfif
     - assets/bokchoymodel.tflite
+    - assets/model(Sept 2025).tflite
     - assets/model_fixed.tflite
     - assets/petchay_labels.txt
     - assets/images/farmer-icegif-5.gif
