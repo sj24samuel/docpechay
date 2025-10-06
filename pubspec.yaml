@@ -54,6 +54,7 @@ dependencies:
   carousel_slider: ^5.0.0
   tflite_flutter: ^0.11.0
   firebase_database: ^11.3.9
+  onnxruntime: ^1.4.1
 
 dev_dependencies:
   flutter_test:
@@ -97,6 +98,7 @@ flutter:
     - assets/images/fertilizerandpesticides/Mancozeb.jfif
     - assets/images/fertilizerandpesticides/Chlorothalonil.jfif
     - assets/bokchoymodel.tflite
+    - assets/mobilenet_pechay_modelv2.onnx
     - assets/petchay_labels.txt
     - assets/images/farmer-icegif-5.gif
     - assets/images/default_user_profile_pic.png
