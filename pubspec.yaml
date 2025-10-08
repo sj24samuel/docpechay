@@ -55,6 +55,7 @@ dependencies:
   tflite_flutter: ^0.11.0
   firebase_database: ^11.3.9
   onnxruntime: ^1.4.1
+  http: ^1.5.0
 
 dev_dependencies:
   flutter_test:

@@ -16,6 +16,7 @@ import 'package:docpechayapp/pages/user_pages/homescreen.dart';
 import 'package:docpechayapp/pages/user_pages/databank.dart';
 import 'package:docpechayapp/pages/user_profile/userinfo.dart';
 import 'package:docpechayapp/pages/user_pages/scanning/treatmentbank.dart';
+import 'package:docpechayapp/pages/user_pages/scanning/camerainternet.dart';
 
 class Navigation extends StatefulWidget {
   const Navigation({super.key});
@@ -85,6 +86,16 @@ class _HomepageState extends State<Navigation> {
               onTap: () {
                 setState(() {
                   _page = 1;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.medical_information),
+              title: const Text('Onlince Pechay Doctor Scanner'),
+              onTap: () {
+                setState(() {
+                  _page = 10;
                 });
                 Navigator.pop(context);
               },
@@ -223,6 +234,8 @@ class _HomepageState extends State<Navigation> {
         );
       case 9:
         return MonitoringNav();
+      case 10:
+        return const DiseaseDetectionPage();
       default:
         return Container();
     }
