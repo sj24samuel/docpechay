@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+//import 'package:geolocator/geolocator.dart';
 import 'package:docpechayapp/pages/guest_pages/scanning/result_page.dart';
 import 'package:docpechayapp/services/onnx_service.dart';
 

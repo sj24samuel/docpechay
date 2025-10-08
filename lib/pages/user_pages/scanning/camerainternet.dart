@@ -45,15 +45,25 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage> {
 
   // 🔹 Call Roboflow API
   Future<Map<String, dynamic>?> _detectDisease(String imageUrl) async {
-    const String apiKey = "dK5UJXQ3f7EGzJdxc4GD"; // <-- replace this
-    const String modelUrl =
-        "https://serverless.roboflow.com/pechaydiseasemodel-kt1tc/2"; // <-- replace with your model endpoint
+    const String apiKey = "dK5UJXQ3f7EGzJdxc4GD";
+    const String model = "pechaydiseasemodel-kt1tc/2"; // model/version
 
-    final url = Uri.parse('$modelUrl?api_key=$apiKey&image=$imageUrl');
-    final response = await http.get(url);
+    // Use the detect.roboflow.com endpoint instead of serverless
+    final uri = Uri.parse(
+        "https://detect.roboflow.com/$model?api_key=$apiKey&image=$imageUrl");
+
+    final response = await http.get(uri);
+
+    print("Roboflow response (${response.statusCode}): ${response.body}");
 
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final decoded = json.decode(response.body);
+
+      // Roboflow sometimes returns { "predictions": [] } or { "output": { "predictions": [] } }
+      if (decoded.containsKey('output')) {
+        return decoded['output'];
+      }
+      return decoded;
     } else {
       print("Error: ${response.statusCode}");
       print(response.body);
@@ -72,6 +82,7 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage> {
     try {
       // 1️⃣ Upload to Firebase
       final imageUrl = await _uploadToFirebase(_imageFile!);
+      print("🔗 Firebase image URL: $imageUrl");
       setState(() {
         _uploadedImageUrl = imageUrl;
       });
@@ -104,6 +115,7 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage> {
 
   // 🔹 Display detection results
   Widget _buildResultView() {
+    print("Roboflow result: $_result");
     if (_result == null) {
       return const Text('No result yet.');
     }

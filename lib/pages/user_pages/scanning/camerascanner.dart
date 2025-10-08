@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 import 'result_page.dart';
-import 'package:docpechayapp/services/tflite_service.dart';
+import 'package:docpechayapp/services/onnx_service.dart';
 
 class CameraScanner extends StatefulWidget {
   const CameraScanner({super.key});
@@ -22,7 +22,7 @@ class _CameraScannerState extends State<CameraScanner> {
   double detectionConfidence = 0.0;
   bool isCapturing = false;
 
-  final _tfliteService = TFLiteService();
+  final _tfliteService = OnnxService();
 
   @override
   void initState() {
